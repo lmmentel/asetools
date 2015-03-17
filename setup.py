@@ -9,7 +9,6 @@ setup(
     packages = ['asetools'],
     include_package_data = True,
     scripts = [
-        'scripts/SLURMtemplate.py',
         'scripts/analyze',
         'scripts/ase-build-py26',
         'scripts/ase-db-py26',

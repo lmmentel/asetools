@@ -1,48 +1,71 @@
 #!/usr/bin/env python
-'''Script used to generate the submission script for SLURM and sbatch the job'''
 
-from string import Template
-import os,numpy
+'''Script used to generate the submission script for batch systems'''
+
+from __future__ import print_function
+
+import numpy as np
+import os
+import socket
+import subprocess
+from asetools import get_template
 from argparse import ArgumentParser
+from string import Template
 
 def main():
 
-    parser = ArgumentParser(usage='Script used to generate submission script for SLURMand submit the (mpi) job.')
+    parser = ArgumentParser(usage='Script used to generate submission script for batch systems')
     group = parser.add_mutually_exclusive_group()
 
+    group.add_argument("-H", "--HOST",
+                       default="",
+                       help="destination hostname, default=''")
+    group.add_argument("-n", "--nodes",
+                       default="1",
+                       help="number of nodes, default=1")
+
+    parser.add_argument('-d', '--dryrun',
+                        action='store_true',
+                        help='Create sbatch script, but do not submit.')
+    parser.add_argument('-i', '--input',
+                        default='input.py',
+                        help='Name of input file(s) that you want copied to the compute node. Default=input.py')
     parser.add_argument('--name',
                         default = os.getcwd()[-8:],
-                        help='Name of job. Default: extracted from submission path')
+                        help='Name of the job. Default: extracted from submission path')
+    parser.add_argument('--nativeqe',
+                        action="store_true",
+                        default=False,
+                        help='Runs internal espresso routines, instead of through the ase-espresso interface')
+    parser.add_argument('-p', '--ppn',
+                        default='16',
+                        help='Number of cores. Default=16 (one full node)')
     parser.add_argument('--project',
                         dest='pno',
                         default='nn4683k',
                         help='NOTUR project number. Retrieve it with PROJECT command.')
-    parser.add_argument('-i',
-                        '--input',
-                        default='input.py',
-                        help='Name of input file(s) that you want copied to the compute node. Default=input.py')
-    group.add_argument("-n",
-                       "--nodes",
-                       default="1",
-                       help="number of nodes, default=1")
-    group.add_argument("-H",
-                       "--HOST",
-                       default="",
-                       help="destination hostname, default=''")
-    parser.add_argument('--native',
+    parser.add_argument("-s", "--scratch",
                         action="store_true",
-                        default=False,
-                        help='Runs internal espresso routines, instead of through the ase-espresso interface')
-    parser.add_argument('-n',
-                        '--ncpu',
-                        default='16',
-                        help='Number of cores. Default=16 (one full node)')
-    parser.add_argument('--dryrun',
-                        action='store_true',
-                        default=False,
-                        help='Create sbatch script, but do not submit.')
+                        help="use node scratch directory (/scratch/$USER), default=False")
+    parser.add_argument("-t", "--walltime",
+                        default="120:00:00",
+                        help="walltime in the format HH:MM:SS, default=120:00:00")
 
-    args = parser.parse_args()
+    args = vars(parser.parse_args())
+
+    args['workdir'] = os.getcwd()
+    args['home'] = os.getenv("HOME")
+    args['libs'] = ''
+    if socket.gethostname() == "boron.chem.umk.pl":
+        args['scratch'] = os.path.join('/scratch', os.getenv('USER'))
+        args['executable'] = "/home/lmentel/Downloads/quantum_espresso/espresso-dynpy-beef/bin/pw.x"
+        args['libs'] = ['/share/apps/lib', '/share/apps/intel/composer_xe_2015.1.133/compiler/lib/intel64',
+                        '/share/apps/intel/composer_xe_2015.1.133/mkl/lib/intel64']
+    args['local_scr'] = os.path.join(os.getenv('HOME'), 'scratch')
+    args['jobname'] = os.path.splitext(args["input"])[0]
+    args['outfile'] = args['jobname'] + ".out"
+    args['script_name'] = "run." + args['jobname']
+    args['python'] = '/share/apps/bin/python2.7'
 
     submit(args)
 
@@ -56,8 +79,8 @@ def submit(args, batch="PBS"):
     args: ArgumentParse obj
         arguments specifying the job
     '''
-    
-    submitters = {"pbe" : submit_pbe,
+
+    submitters = {"pbs" : submit_pbs,
                   "slurm" : submit_slurm,
                  }
 
@@ -66,41 +89,7 @@ def submit(args, batch="PBS"):
         submitter(args)
     else:
         raise NotImplementedError("support for '{0:s}' is not implemented \
-                supported batch systems are: {}".format(batch), ", ".join(submitters.keys()))
-
-
-def submit_slurm(args):
-
-    #args[0] #should be time in format hh:mm:ss
-    if int(args.ncpu) >= 16:
-        ncpu_pernode = 16
-    else:
-        ncpu_pernode = int(args.ncpu)
-    nnodes = int(numpy.ceil(int(args.ncpu)/16.0)) #NB: means that for >16 CPUs, the script will automatically fully allocate all nodes, i.e. up to 15 more CPUs than requested
-    cpupars = '--nodes=%s --ntasks-per-node=%d' % (nnodes,ncpu_pernode)
-
-    modules = 'espresso/5.0.3_beef' #5.0.3 is 5.0.2 with openmpi1.8
-    commands = 'python ' + args.input
-    cleanup = ''
-    chkfiles = ''
-    if args.nativeQE:
-        #commands = 'cp *.inp $SCRATCH\ncd $SCRATCH\nmpirun pw.x < pw.inp > pw.out\npwlog2traj pw.out dyn.traj\nmpirun ph.x < ph.inp > ph.out\nmpirun dynmat.x < dynmat.inp > dynmat.out'
-        commands = 'cp *.inp $SCRATCH\ncd $SCRATCH\nmpirun pw.x < pw.inp > pw.out\nmpirun ph.x < ph.inp > ph.out\nmpirun dynmat.x < dynmat.inp > dynmat.out'
-        cleanup = 'cp -r pw.out dyn.traj ph.out dynmat.dat dynmat.out dynmat.mold calc.save _ph0/calc.phsave $SUBMITDIR'
-
-    with open(os.getenv("HOME")+'/bin/SLURMtemplate.py','r') as ftemp:
-        template = Template(ftemp.read())
-
-    with open('submscript','w') as finp:
-        finp.write(template.substitute(jobname=args.name, projectno=args.pno,
-                                       time=args[0], cpupars=cpupars, modules=modules,
-                                       SCRATCH='$SCRATCH', SUBMITDIR='$SUBMITDIR',
-                                       JOB_ID='$JOB_ID', HOME='$HOME',
-                                       chkfiles=chkfiles, commands=commands,
-                                       cleanupcommand=cleanup))
-
-    if not args.dryrun:
-        os.system('mysbatch submscript')
+                supported batch systems are: {1:s}".format(batch, ", ".join(submitters.keys())))
 
 def submit_pbs(args):
     '''
@@ -114,7 +103,7 @@ def submit_pbs(args):
         else:
             script.write("#PBS -l nodes={0}:ppn={1}\n".format(args['nodes'], args['ppn']))
         script.write("#PBS -l walltime={0}\n\n".format(args['walltime']))
-        if args['libs'] is not None:
+        if args['libs'] is not None and args['libs'] != "":
             script.write('export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:{0:<s}\n\n'.format(":".join(args['libs'])))
         script.write("cd $PBS_O_WORKDIR\n")
         if args['scratch']:
@@ -125,8 +114,12 @@ def submit_pbs(args):
                 files += ' ' + ' '.join(args['extrafiles'])
             script.write('cp -t {0} {1}\n'.format(wrkdir, files))
             script.write('cd {0}\n'.format(wrkdir))
-        script.write("\n/share/apps/bin/mpirun -np {0} {1:<s} -in {2:<s} \n".format(args['ppn'],
-                     args['executable'], args['input']))
+        if args['nativeqe']:
+            execute = "\n/share/apps/bin/mpirun -np {0} {1:<s} -in {2:<s}\n".format(
+                        args['ppn'], args['executable'], args['input'])
+        else:
+            execute = "\n{p:s} {i:s}".format(p=args['python'], i=args['input'])
+        script.write(execute)
 
     # submit the job to the queue if requested
     if args['dryrun']:
@@ -134,8 +127,40 @@ def submit_pbs(args):
     else:
         print("Created job script: {0}\nsubmitting to the queue".format(args['script_name']))
         sublog = open(args['jobname'] + ".sublog", 'w')
-        proc = subprocess.Popen(["qsub", "-q", args['queue'], "-N", args['jobname'], args['script_name']], stdout=sublog, stderr=sublog)
+        subprocess.Popen(["qsub", "-q", args['queue'], "-N", args['jobname'], args['script_name']], stdout=sublog, stderr=sublog)
         sublog.close()
+
+def submit_slurm(args):
+
+    #args[0] #should be time in format hh:mm:ss
+    if int(args.ncpu) >= 16:
+        ncpu_pernode = 16
+    else:
+        ncpu_pernode = int(args.ncpu)
+    nnodes = int(np.ceil(int(args.ncpu)/16.0)) #NB: means that for >16 CPUs, the script will automatically fully allocate all nodes, i.e. up to 15 more CPUs than requested
+    cpupars = '--nodes=%s --ntasks-per-node=%d' % (nnodes,ncpu_pernode)
+
+    modules = 'espresso/5.0.3_beef' #5.0.3 is 5.0.2 with openmpi1.8
+    commands = 'python ' + args.input
+    cleanup = ''
+    chkfiles = ''
+    if args.nativeQE:
+        #commands = 'cp *.inp $SCRATCH\ncd $SCRATCH\nmpirun pw.x < pw.inp > pw.out\npwlog2traj pw.out dyn.traj\nmpirun ph.x < ph.inp > ph.out\nmpirun dynmat.x < dynmat.inp > dynmat.out'
+        commands = 'cp *.inp $SCRATCH\ncd $SCRATCH\nmpirun pw.x < pw.inp > pw.out\nmpirun ph.x < ph.inp > ph.out\nmpirun dynmat.x < dynmat.inp > dynmat.out'
+        cleanup = 'cp -r pw.out dyn.traj ph.out dynmat.dat dynmat.out dynmat.mold calc.save _ph0/calc.phsave $SUBMITDIR'
+
+    template = Template(get_template('SLURMtemplate.py'))
+
+    with open('submscript','w') as finp:
+        finp.write(template.substitute(jobname=args.name, projectno=args.pno,
+                                       time=args[0], cpupars=cpupars, modules=modules,
+                                       SCRATCH='$SCRATCH', SUBMITDIR='$SUBMITDIR',
+                                       JOB_ID='$JOB_ID', HOME='$HOME',
+                                       chkfiles=chkfiles, commands=commands,
+                                       cleanupcommand=cleanup))
+
+    if not args.dryrun:
+        os.system('mysbatch submscript')
 
 if __name__ == "__main__":
     main()

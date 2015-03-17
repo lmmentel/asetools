@@ -3,6 +3,7 @@
 '''Script used to generate input file for a geometry optimization Quantum
 Espresso NB: should be run in the appropriate directory'''
 
+from asetools import get_template
 from string import Template
 import os
 from argparse import ArgumentParser
@@ -12,9 +13,8 @@ def main():
     parser = ArgumentParser(usage='Script used to run an espresso calculation.')
 
     parser.add_argument('-i', '--input',
-                        dest='readpath',
                         default='startguess.traj',
-                        help='Name and (relative) path of input file. Default:startguess.traj')
+                        help='Name and (relative) path of input file. Default=startguess.traj')
     parser.add_argument('-n', '--ncpus',
                         default='16',
                         help='Requested number of cores. Default=16')
@@ -53,7 +53,7 @@ def main():
                         action="store_true",
                         default=False,
                         help='Runs internal espresso routines, instead of through the ase-espresso interface')
-    parser.add_argument('--nosubmit',
+    parser.add_argument('--dryrun',
                         action="store_false",
                         default=True,
                         help='Do not submit job.')
@@ -61,7 +61,7 @@ def main():
     args = parser.parse_args()
 
     spinpol = False
-    if args.magmomidxs: #initial magmoms are set; turn on spin-polarized calculation
+    if args.magmoms: #initial magmoms are set; turn on spin-polarized calculation
         spinpol = True
     extralines = ''
     if args.molecule:
@@ -84,8 +84,7 @@ def main():
     else:
         vdw = None
 
-    with open(os.getenv('TEMPLATESPATH')+tname, 'r') as ftemp:
-        template = Template(ftemp.read())
+    template = Template(get_template(tname))
 
     with open('input.py', 'w') as finp:
         finp.write(template.substitute(vars(args)))
@@ -94,7 +93,7 @@ def main():
 #                                       dw=args.dw, kpts=args.kpts,
 #                                       sigma=args.sigma, spinpol=spinpol,
 #                                       mode=nativemode, idxs=args.magmomidxs,
-#                                       readpath=args.readpath, fmax=args.fmax,
+#                                       readpath=args['readpath'], fmax=args.fmax,
 #                                       extralines=extralines))
 
     nativeflag = ' '
