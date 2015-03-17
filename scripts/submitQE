@@ -1,46 +1,98 @@
 #!/usr/bin/env python
-#Script used to generate the submission script for SLURM and sbatch the job
+'''Script used to generate the submission script for SLURM and sbatch the job'''
 
 from string import Template
 import os,numpy
-from optparse import OptionParser
+from argparse import ArgumentParser
 
-parser = OptionParser(usage='Script used to generate submission script for SLURMand submit the (mpi) job.')
+def main():
 
-parser.add_option('--name', dest='name',default=os.getcwd()[-8:],
-                  help='Name of job. Default: extracted from submission path')
-parser.add_option('--project',dest='pno',default='nn4683k',help='NOTUR project number. Retrieve it with PROJECT command.')
-parser.add_option('-i','--input',dest='input',default='input.py',help='Name of input file(s) that you want copied to the compute node. Default=input.py')
-parser.add_option('--native', action="store_true", dest='nativeQE',default=False,help='Runs internal espresso routines, instead of through the ase-espresso interface')
-parser.add_option('-n','--ncpu',dest='ncpu',default='16',help='Number of cores. Default=16 (one full node)')
-parser.add_option('--dryrun',action='store_true',dest='dryrun',default=False,help='Create sbatch script, but do not submit.')
+    parser = ArgumentParser(usage='Script used to generate submission script for SLURMand submit the (mpi) job.')
 
-(options,args) = parser.parse_args()
-#args[0] #should be time in format hh:mm:ss
-if int(options.ncpu) >= 16:
-  ncpu_pernode = 16
-else:
-  ncpu_pernode = int(options.ncpu)
-nnodes = int(numpy.ceil(int(options.ncpu)/16.0)) #NB: means that for >16 CPUs, the script will automatically fully allocate all nodes, i.e. up to 15 more CPUs than requested
-cpupars = '--nodes=%s --ntasks-per-node=%d' % (nnodes,ncpu_pernode)
+    parser.add_argument('--name',
+                        default = os.getcwd()[-8:],
+                        help='Name of job. Default: extracted from submission path')
+    parser.add_argument('--project',
+                        dest='pno',
+                        default='nn4683k',
+                        help='NOTUR project number. Retrieve it with PROJECT command.')
+    parser.add_argument('-i',
+                        '--input',
+                        default='input.py',
+                        help='Name of input file(s) that you want copied to the compute node. Default=input.py')
+    parser.add_argument('--native',
+                        action="store_true",
+                        default=False,
+                        help='Runs internal espresso routines, instead of through the ase-espresso interface')
+    parser.add_argument('-n',
+                        '--ncpu',
+                        default='16',
+                        help='Number of cores. Default=16 (one full node)')
+    parser.add_argument('--dryrun',
+                        action='store_true',
+                        default=False,
+                        help='Create sbatch script, but do not submit.')
 
-modules = 'espresso/5.0.3_beef' #5.0.3 is 5.0.2 with openmpi1.8
-commands = 'python '+options.input
-cleanup = ''
-chkfiles = ''
-if options.nativeQE:
-  #commands = 'cp *.inp $SCRATCH\ncd $SCRATCH\nmpirun pw.x < pw.inp > pw.out\npwlog2traj pw.out dyn.traj\nmpirun ph.x < ph.inp > ph.out\nmpirun dynmat.x < dynmat.inp > dynmat.out'
-  commands = 'cp *.inp $SCRATCH\ncd $SCRATCH\nmpirun pw.x < pw.inp > pw.out\nmpirun ph.x < ph.inp > ph.out\nmpirun dynmat.x < dynmat.inp > dynmat.out'
-  cleanup = 'cp -r pw.out dyn.traj ph.out dynmat.dat dynmat.out dynmat.mold calc.save _ph0/calc.phsave $SUBMITDIR'
+    args = parser.parse_args()
 
-f = open(os.getenv("HOME")+'/bin/SLURMtemplate.py','r')
-template = Template(f.read())
-f.close()
-del f
-f = open('submscript','w')
-f.write(template.substitute(jobname=options.name,projectno=options.pno,time=args[0],cpupars=cpupars,modules=modules,SCRATCH='$SCRATCH',SUBMITDIR='$SUBMITDIR',JOB_ID='$JOB_ID',HOME='$HOME',chkfiles=chkfiles,commands=commands,cleanupcommand=cleanup))
-f.close()
-del f
+    submit(args)
 
-if not options.dryrun:
-  os.system('mysbatch submscript')
+def submit(args, batch="PBE"):
+    '''
+    Submit a job to the batch system defined by the "batch" variable with the
+    job details specified in the args object.
+
+    batch: (str)
+        name of the batch system:  "PBE", "SLURM", "LoadLeveller"
+    args: ArgumentParse obj
+        arguments specifying the job
+    '''
+    
+    submitters = {"pbe" : submit_pbe,
+                  "slurm" : submit_slurm,
+                 }
+
+    submitter = submitters.get(batch.lower(), None)
+    if submitter is not None:
+        submitter(args)
+    else:
+        raise NotImplementedError("support for '{0:s}' is not implemented,
+                supported batch systems are: {}".format(batch), ",
+                ".join(submitters.keys()))
+
+
+def submit_slurm(args):
+
+    #args[0] #should be time in format hh:mm:ss
+    if int(args.ncpu) >= 16:
+        ncpu_pernode = 16
+    else:
+        ncpu_pernode = int(args.ncpu)
+    nnodes = int(numpy.ceil(int(args.ncpu)/16.0)) #NB: means that for >16 CPUs, the script will automatically fully allocate all nodes, i.e. up to 15 more CPUs than requested
+    cpupars = '--nodes=%s --ntasks-per-node=%d' % (nnodes,ncpu_pernode)
+
+    modules = 'espresso/5.0.3_beef' #5.0.3 is 5.0.2 with openmpi1.8
+    commands = 'python ' + args.input
+    cleanup = ''
+    chkfiles = ''
+    if args.nativeQE:
+        #commands = 'cp *.inp $SCRATCH\ncd $SCRATCH\nmpirun pw.x < pw.inp > pw.out\npwlog2traj pw.out dyn.traj\nmpirun ph.x < ph.inp > ph.out\nmpirun dynmat.x < dynmat.inp > dynmat.out'
+        commands = 'cp *.inp $SCRATCH\ncd $SCRATCH\nmpirun pw.x < pw.inp > pw.out\nmpirun ph.x < ph.inp > ph.out\nmpirun dynmat.x < dynmat.inp > dynmat.out'
+        cleanup = 'cp -r pw.out dyn.traj ph.out dynmat.dat dynmat.out dynmat.mold calc.save _ph0/calc.phsave $SUBMITDIR'
+
+    with open(os.getenv("HOME")+'/bin/SLURMtemplate.py','r') as ftemp:
+        template = Template(ftemp.read())
+
+    with open('submscript','w') as finp:
+        finp.write(template.substitute(jobname=args.name, projectno=args.pno,
+                                       time=args[0], cpupars=cpupars, modules=modules,
+                                       SCRATCH='$SCRATCH', SUBMITDIR='$SUBMITDIR',
+                                       JOB_ID='$JOB_ID', HOME='$HOME',
+                                       chkfiles=chkfiles, commands=commands,
+                                       cleanupcommand=cleanup))
+
+    if not args.dryrun:
+        os.system('mysbatch submscript')
+
+if __name__ == "__main__":
+    main()
