@@ -8,6 +8,7 @@ from argparse import ArgumentParser
 def main():
 
     parser = ArgumentParser(usage='Script used to generate submission script for SLURMand submit the (mpi) job.')
+    group = parser.add_mutually_exclusive_group()
 
     parser.add_argument('--name',
                         default = os.getcwd()[-8:],
@@ -20,6 +21,14 @@ def main():
                         '--input',
                         default='input.py',
                         help='Name of input file(s) that you want copied to the compute node. Default=input.py')
+    group.add_argument("-n",
+                       "--nodes",
+                       default="1",
+                       help="number of nodes, default=1")
+    group.add_argument("-H",
+                       "--HOST",
+                       default="",
+                       help="destination hostname, default=''")
     parser.add_argument('--native',
                         action="store_true",
                         default=False,
@@ -37,7 +46,7 @@ def main():
 
     submit(args)
 
-def submit(args, batch="PBE"):
+def submit(args, batch="PBS"):
     '''
     Submit a job to the batch system defined by the "batch" variable with the
     job details specified in the args object.
