@@ -1,1 +1,1 @@
-recursive-include templates *.py 
+recursive-include asetools/templates *.py 
