@@ -56,9 +56,8 @@ def submit(args, batch="PBE"):
     if submitter is not None:
         submitter(args)
     else:
-        raise NotImplementedError("support for '{0:s}' is not implemented,
-                supported batch systems are: {}".format(batch), ",
-                ".join(submitters.keys()))
+        raise NotImplementedError("support for '{0:s}' is not implemented \
+                supported batch systems are: {}".format(batch), ", ".join(submitters.keys()))
 
 
 def submit_slurm(args):
@@ -93,6 +92,41 @@ def submit_slurm(args):
 
     if not args.dryrun:
         os.system('mysbatch submscript')
+
+def submit_pbs(args):
+    '''
+    Write the run script for PBS and submit it to the queue.
+    '''
+
+    with open(args['script_name'], 'w') as script:
+        script.write("#PBS -S /bin/bash\n")
+        if args['HOST'] != "":
+            script.write("#PBS -l nodes={0}:ppn={1}\n".format(args['HOST'], args['ppn']))
+        else:
+            script.write("#PBS -l nodes={0}:ppn={1}\n".format(args['nodes'], args['ppn']))
+        script.write("#PBS -l walltime={0}\n\n".format(args['walltime']))
+        if args['libs'] is not None:
+            script.write('export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:{0:<s}\n\n'.format(":".join(args['libs'])))
+        script.write("cd $PBS_O_WORKDIR\n")
+        if args['scratch']:
+            wrkdir = os.path.join(args['scratch'], args['jobname'])
+            script.write("mkdir -p {}\n".format(wrkdir))
+            files = args['input']
+            if args['extrafiles']:
+                files += ' ' + ' '.join(args['extrafiles'])
+            script.write('cp -t {0} {1}\n'.format(wrkdir, files))
+            script.write('cd {0}\n'.format(wrkdir))
+        script.write("\n/share/apps/bin/mpirun -np {0} {1:<s} -in {2:<s} \n".format(args['ppn'],
+                     args['executable'], args['input']))
+
+    # submit the job to the queue if requested
+    if args['dryrun']:
+        print("Created job script: {0}\n NOT submitting to the queue\nbye...".format(args['script_name']))
+    else:
+        print("Created job script: {0}\nsubmitting to the queue".format(args['script_name']))
+        sublog = open(args['jobname'] + ".sublog", 'w')
+        proc = subprocess.Popen(["qsub", "-q", args['queue'], "-N", args['jobname'], args['script_name']], stdout=sublog, stderr=sublog)
+        sublog.close()
 
 if __name__ == "__main__":
     main()
