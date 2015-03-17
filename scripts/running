@@ -1,0 +1,92 @@
+#!/usr/bin/env python
+"""Display status of running and pending jobs."""
+
+import os
+import commands
+from optparse import OptionParser
+
+
+###### Functions #####################################################
+
+def decipher_line(line):
+    data = line.split()
+    d = {}
+    d['pid'] = data[0]
+    d['user'] = data[1]
+    d['status'] = data[2]
+    d['queue'] = data[3]
+    d['submit_machine'] = data[4]
+    if d['status'] == 'RUN':
+        d['run_machines'] = data[5].split(':')
+        d['no_processors'] = 0
+        for run_machine in d['run_machines']:
+            if '*' in run_machine:
+                d['no_processors'] += int(run_machine.split('*')[0])
+            else:
+                d['no_processors'] += 1
+    return d
+
+def print_short_status(user):
+    running = int(commands.getoutput('bjobs -u %s | grep -c RUN' % 
+                                     user))
+    pending = int(commands.getoutput('bjobs -u %s | grep -c PEND' % 
+                                     user))
+
+    print('%i/%i/%i (running/pending/total) [jobs]' % 
+          (running,pending,running+pending))
+
+def verbose_status(user, printoutput=True):
+    lines = commands.getoutput('bjobs -w -u all | grep suncat').splitlines()
+    total_cpus = 0
+    user_cpus = 0
+    for line in lines:
+        d = decipher_line(line)
+        if d['status'] == 'RUN':
+            total_cpus += d['no_processors']
+            if d['user'] == user:
+                user_cpus += d['no_processors']
+
+    string = ('%4i of %4i active (%4.1f%%) [CPUs]' %
+              (user_cpus, total_cpus,
+              float(user_cpus)/float(total_cpus)*100.))
+    if printoutput:
+        print string
+    else:
+        return string
+
+def get_all_users_running():
+    lines = commands.getoutput('bjobs -w -u all | grep '
+                               'suncat').splitlines()
+    users = []
+    for line in lines:
+        d = decipher_line(line)
+        if d['user'] not in users:
+            users.append(d['user'])
+    return users
+
+def print_all_users_status():
+    users = get_all_users_running()
+    for user in users:
+        string = user + ': ' + verbose_status(user, printoutput=False)
+        string = '%12s : %s' % (user,
+                                verbose_status(user, printoutput=False))
+        print string
+
+
+
+if __name__ == '__main__':
+
+    parser = OptionParser(usage='usage: %prog [options]')
+    parser.add_option('-u', dest='user', default=os.getenv('USER'),
+                      help='user name')
+    parser.add_option('-a', '--all', dest='all', default=False,
+                      action='store_true',
+                      help='print summary of all users')
+    (options, args) = parser.parse_args()
+
+    if options.all:
+        print_all_users_status()
+    else:
+        print_short_status(options.user)
+        verbose_status(options.user)
+

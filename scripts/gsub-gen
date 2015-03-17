@@ -1,0 +1,34 @@
+#!/bin/tcsh
+#Wrapper script for submission on suncat and idle queues on external clusters
+
+#Retrieve version from the gpawver file
+set ver = `tail -n 1 /a/suncatfs1/u1/brogaard/bin/gpawver`
+
+#If fourth argument (gpaw input file name) is not present, assume it to be input.py
+if ( $#argv >  3 ) then
+  set input = $4' '$5 #argument no 5 can be an extra input argument to the python script
+else
+  set input = 'input.py'
+endif
+
+set cluster = $1
+
+if ( $cluster == 'suncat') then
+  if ($3 =~ *suncat3*) then
+    set ver = ${ver}a #Hard-wired until Chris finds a permanent solution for suncat3
+  endif
+  source /nfs/slac/g/suncatfs/sw/gpawv$ver/setupenv
+  setenv PYTHONPATH ${PYTHONPATH}:/a/suncatfs1/u1/brogaard/bin/mypython
+  setenv MPLCONFIGDIR /nfs/slac/g/suncatfs/brogaard
+  set a = `/afs/slac/g/suncat/bin/dobsub -a mympi gpaw-python -n $2 -q $3 -o out.log $input`
+else
+  set a = `gpaw-${cluster}-ver-bsub $ver -n $2 -q $3 -o out.log $input`
+endif
+
+set a = `echo $a | grep -oE "[[:digit:]]{1,}"`
+set pid = `echo $a | awk '{print $1}'`
+echo $pid
+set date=`date`
+#chmod +w $HOME/submitted_files.dat
+echo $pid $PWD $input $date >> $HOME/submitted_files.dat
+#chmod -w $HOME/submitted_files.dat

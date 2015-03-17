@@ -1,0 +1,18 @@
+#!/bin/sh
+#Script to create a subdirectory for and submit a restart of a job
+#NB NB: must be executed in the directory in which the original job
+#was performed.
+mkdir Restart
+cp input.py submscript Restart/
+cd Restart/
+sed "s#\(read('\).*\(')\)#\1../dyn.traj\2#" input.py > input_temp
+mv input_temp input.py
+#python input.py
+if [ "$1" == "run" ]
+then
+  mysbatch submscript
+else
+#Provide submission command as argument. If empty, nothing is executed
+  $@
+fi
+

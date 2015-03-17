@@ -1,0 +1,37 @@
+#!/usr/bin/env python
+#Script used to prepare an RPBE calculation based on a BEEF-vdW optimized structure
+
+from string import Template
+import os,errno
+from sys import argv,exit
+from commands import getoutput
+from ase import Atoms
+from ase.io import read,write
+from mypython import get_selected_atom_indices,mymkdir
+
+#Generate startguess, i.e. atoms set without hydrocarbon atoms
+
+try:
+  os.mkdir('RPBE')
+except OSError, e:
+  if e.errno != errno.EEXIST: #any other error is safely reported
+            raise
+  print 'Directory already exists. Exiting...'
+  exit(errno.EEXIST)
+
+# Import the template into a template object.
+tdir = '/a/suncatfs1/u1/brogaard/bin/mypython/'
+f = open(tdir+'QEsingleenergy_template.py','r')
+template = Template(f.read())
+f.close()
+del f
+
+os.chdir('RPBE')
+
+f = open('input.py','w')
+f.write(template.substitute(readpath='../dyn.traj',pw='400',kpts='(1,1,1)',xc='RPBE'))
+f.close()
+del f
+os.system(' '.join(argv[1:]))
+
+os.chdir('../')

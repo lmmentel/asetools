@@ -1,0 +1,9 @@
+#!/bin/tcsh
+#Wrapper script for sbatch, to extract process id and save it in submitted_jobs.dat
+
+set out = `/cluster/bin/sbatch $argv`
+echo $out
+set out = `echo $out | grep -oE "[[:digit:]]{1,}"`
+set pid = `echo $out | awk '{print $1}'`
+set date=`date`
+echo $pid $PWD $date $argv >> $HOME/submitted_jobs.dat

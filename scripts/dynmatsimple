@@ -1,0 +1,2 @@
+module load espresso/5.0.3_beef
+dynmat.x fildyn='dynmat.dat' asr='simple' > dynmat_simpleasr.out

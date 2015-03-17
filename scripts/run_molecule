@@ -1,0 +1,33 @@
+#!/usr/bin/env python
+#Script used to run calculations on molecules -- will find the xyz file containing the start geometry itself
+
+from string import Template
+import os
+from sys import argv
+
+path = argv[1]
+
+try:
+    n_cpu = argv[2]
+    print 'n_cpu:',n_cpu
+except IndexError:
+    print 'using default n_cpu = 12'
+    n_cpu = 12
+try:
+    queue = argv[3]
+    print 'queue:',queue
+except IndexError:
+    print 'using default queue = suncat2-medium'
+    queue = 'suncat2-medium'
+
+# Import the template into a template object.
+f = open('/a/suncatfs1/u1/brogaard/bin/mypython/molecule_template.py','r')
+template = Template(f.read())
+f.close()
+del f
+f = open('input.py','w')
+f.write(template.substitute(xc='BEEF-vdW',h='0.2',vac='5.0',readpath=path,pbc='False'))
+f.close()
+del f
+os.system('gsub -o out.log -q '+queue+' -n '+str(n_cpu)+' input.py')
+

@@ -1,0 +1,62 @@
+#!/usr/bin/env python
+#Script used to rerun RPBE calculations on ZSM22 with BEEF
+from string import Template
+import os
+from sys import argv
+import re
+from commands import getoutput
+
+#path = argv[1]
+#print 'path',path
+try:    
+    initial = argv[1]
+except IndexError:
+    print 'directory of initial image has to be provided!'
+    exit
+try:
+    final = argv[2]
+except IndexError:
+    print 'directory of final image has to be provided!'
+    exit
+
+#Find out how many images was used
+query='nimage[[:space:]]*='
+output = getoutput('grep %s input.py' % query)
+nimage = int(re.findall(r'\d+', output)[0])
+
+print 'initdir:',initial
+print 'finaldir:',final
+print 'n_images:',nimage
+
+try:
+    n_cpu = argv[3]
+    print 'n_cpu:',n_cpu
+except IndexError:
+    n_cpu = nimage * 12
+    print 'using default n_cpu: %d (12*n_images)' % n_cpu
+try:
+    queue = argv[4]
+    print 'queue:',queue
+except IndexError:
+    print 'using default queue: suncat2-long'
+    queue = 'suncat2-long'
+
+#For now hardcoded values. Can be provided as input later if necessary
+lc = [14.266,17.474,5.0662] #unit cell lattice constants, BEEF optimized
+repeat = 2 #number of primitive cell repeats in z direction (big channel)
+
+os.mkdir('BEEF')
+os.chdir('BEEF')
+
+# Import the template into a template object.
+f = open('/a/suncatfs1/u1/brogaard/bin/mypython/ZSM22_BEEFrerunneb_template.py','r')
+template = Template(f.read())
+f.close()
+del f
+f = open('input.py','w')
+f.write(template.substitute(lc=lc,zrep=repeat,nimage=nimage,initial=initial,final=final))
+f.close()
+del f
+os.system('gsub-sun '+str(n_cpu)+' '+queue)
+os.chdir('../')
+

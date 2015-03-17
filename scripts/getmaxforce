@@ -1,0 +1,14 @@
+#!/usr/bin/env python
+#Script used to extract the maximal force from a structure in a ASE trajectory file
+
+import os,numpy
+from sys import argv
+from ase.io import read
+from mypython import get_maxforce
+
+try:
+  name = argv[1]
+except:
+  name = 'dyn.traj'
+
+print 'Max. force: %.4f eV/AA' % get_maxforce(read(name))

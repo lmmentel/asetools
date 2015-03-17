@@ -1,0 +1,76 @@
+#!/usr/local/bin/python2.7
+#Script used to extract adsorption energies from screening study
+#Takes as input a filename of a file that contains
+#First line: the path of the molecule
+#Second line: the root path of the bare structures
+
+from string import Template
+import os
+from sys import argv
+from ase.all import *
+import getopt
+
+opts,args = getopt.getopt(argv[1:],'v')
+
+verbose = False
+
+for opt,arg in opts:
+   if opt == '-v':
+	verbose = True
+try: 
+    filename = args[0]
+    f = open(filename,'r')
+except IndexError:
+    print 'Please provide a filename!'
+    sys.exit()
+
+moldir = f.readline().strip('\n')
+subsdir = f.readline().strip('\n')
+f.close()
+
+e_mol = read(moldir+'dyn.traj').get_potential_energy()
+
+included = []
+not_to_include = ['Frequencies','Barriers','opt_zeoliteonly'] 
+
+rundir = os.getcwd()
+
+for root, dirs, files in os.walk('.'):
+    if dirs != ['Restart']:
+	tag = True
+        for l in not_to_include:
+          if l in root:
+             tag = False
+        if tag is True:
+            if not 'dyn.traj' in files:
+		if verbose:
+		   print root+': No usable files'
+	    else:
+		wline=''
+		try:
+		   a = read(os.path.join(root,'dyn.traj'))
+	 	   a_maxforce = np.sqrt(np.sum(a.get_forces()**2.,axis=1)).max()
+		   if a_maxforce > 0.03:
+                     wline=wline+', ads. complex (f=%.4f)' % a_maxforce
+		except:
+		   if verbose:
+ 		      print root+': Couldnt read ads. complex'
+		   continue
+		try:
+		   subspath = os.path.join(subsdir,root.lstrip('./'),'final/dyn.traj')
+		   #print subspath
+		   substrate = read(subspath)
+		   sub_maxforce = np.sqrt(np.sum(substrate.get_forces()**2.,axis=1)).max()
+		   if sub_maxforce > 0.03:
+                     wline=wline+', substrate (f=%.4f)' % sub_maxforce
+		except:
+		   if verbose:
+		     print root+': Couldnt read substrate'
+		   continue
+	 	e_add = a.get_potential_energy()
+		e_sub = substrate.get_potential_energy()
+		e_ads = e_add-e_mol-e_sub
+		print root+': %.2f eV (%.0f kJ/mol)' % (e_ads,e_ads/kJ*mol)+wline
+		#print m[0].rstrip('/Restart')+': %.2f eV (%.0f kJ/mol)' % (e_ads,e_ads/kJ*mol) + wline
+
+

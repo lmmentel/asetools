@@ -1,0 +1,3 @@
+#!/bin/tcsh
+#Wrapper script for submission on the oak cluster
+gsub-gen oak $1 idle $2

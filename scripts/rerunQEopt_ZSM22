@@ -1,0 +1,44 @@
+#!/usr/bin/env python
+#Script used to rerun a previous calculation on ZSM22 with BEEF-vdW/Quantum Espresso
+from string import Template
+import os
+from sys import argv
+
+try:
+    n_cpu = argv[1]
+    print 'n_cpu:',n_cpu
+except IndexError:
+    print 'using default n_cpu = 12'
+    n_cpu = 12
+try:
+    queue = argv[2]
+    print 'queue:',queue
+except IndexError:
+    print 'using default queue = suncat2-medium'
+    queue = 'suncat2-medium'
+try: #number of primitive cell repeats in z direction (along big channel in ZSM22)
+    repeat = argv[3]
+    print 'repeats along z axis:',repeat
+except IndexError:
+    print 'using default zrepeat = 4'
+    repeat = 4
+
+os.mkdir('QE')
+os.chdir('QE')
+
+lc = [] #unit cell lattice constants, BEEF-vdW/QE optimized
+#create the primitive (super) cell from the unit cell parameters
+cell = [[lc[0]*0.5,lc[1]*0.5,0],[-lc[0]*0.5,lc[1]*0.5,0],[0,0,zrep*lc[2]]]
+
+# Import the template into a template object.
+f = open('/a/suncatfs1/u1/brogaard/bin/mypython/QEopt_template.py','r')
+template = Template(f.read())
+f.close()
+del f
+f = open('input.py','w')
+f.write(template.substitute(xc='BEEF',kpts='(1,1,1)',pw='400',readpath='../dyn.traj',cell=str(cell),fmax='0.01'))
+f.close()
+del 
+os.system('esp-ver-bsub 6 -n %s -q %s -o out.log input.py' % (n_cpu,queue))
+os.chdir('../')
+

@@ -1,0 +1,68 @@
+#!/usr/bin/env python
+#Script used to generate input file for a geometry optimization Quantum Espresso
+#NB: should be run in the appropriate directory
+from string import Template
+import os
+from optparse import OptionParser
+
+parser = OptionParser(usage='Script used to run an espresso calculation.')
+
+parser.add_option('-i','--input', dest='readpath',default='startguess.traj',
+                  help='Name and (relative) path of input file. Default:startguess.traj')
+parser.add_option('-n','--ncpus', dest='n_cpu',default='16',
+                  help='Requested number of cores. Default=16')
+parser.add_option('--kpts',dest='kpts',default='gamma',help='Definition of kpts spanning the Brillouin zone. Default=gamma (special qe trick compared to (1,1,1))')
+parser.add_option('--sigma',dest='sigma',default='0.1',help='Fermi smearing, sigma. Default=0.1')
+parser.add_option('--xc',dest='xc',default='BEEF-vdW',help='Exchange Correlation functional. Default=BEEF-vdW')
+parser.add_option('--grimme',action="store_true",dest='grimme',default=False,help='Turn on Grimme DFT-D2 dispersion correction.')
+parser.add_option('--pw',dest='pw',default='500',help='Planewave energy cutoff. Default value: 500 eV')
+parser.add_option('--dw',dest='dw',default='7000',help='Planewave energy cutoff. Default value: 7000 eV')
+parser.add_option('--magmoms',dest='magmomidxs',default='',help='Provide a list of initial magnetic moments of the form \'(atomid,magmom),...\'. Default=\'\', i.e. non-spinpolarized calculation.')
+parser.add_option('--force',dest='fmax',default=0.03,help='Force threshold. Default=0.03 eV/AA.')
+parser.add_option('--molecule', action="store_true", dest='molecule',default=False,help='If true, builds cell around input molecule wih 7.5 AA vacuum in all directions. Also sets force threshold=0.01 eV/AA. Default: False.')
+parser.add_option('--opt', action="store_true", dest='opt',default=False,help='If true, run geometry optimization. Default: False (i.e single point).')
+parser.add_option('--native', action="store_true", dest='nativeQE',default=False,help='Runs internal espresso routines, instead of through the ase-espresso interface')
+parser.add_option('--nosubmit', action="store_false", dest='submit',default=True,help='Do not submit job.')
+
+(options,args) = parser.parse_args()
+#args[0] is time
+spinpol=False
+if options.magmomidxs: #initial magmoms are set; turn on spin-polarized calculation
+     spinpol = True
+extralines=''
+if options.molecule:
+     extralines = 'smart_cell(atoms,vac=7.5,h=0.01) #create cell with equal vacuum spacing of vac Aa in all directions. NB! grid spacing parameter h only matters for a real-space code!'
+     options.fmax = 0.01
+print options
+
+# Import the template into a template object.
+nativemode='scf'
+if options.nativeQE:
+   tname='QEnative_template.py'
+   if options.opt:
+	nativemode='bfgs'
+elif options.opt:
+   tname='QEopt_template.py'
+else:
+   tname='QEsingle_template.py'
+if options.grimme:
+   vdw = '\'dft-d\''
+else:
+   vdw = None
+
+
+f = open(os.getenv('TEMPLATESPATH')+tname,'r')
+template = Template(f.read())
+f.close()
+del f
+f = open('input.py','w')
+f.write(template.substitute(xc=options.xc,vdw=vdw,pw=options.pw,dw=options.dw,kpts=options.kpts,sigma=options.sigma,spinpol=spinpol,mode=nativemode,idxs=options.magmomidxs,readpath=options.readpath,fmax=options.fmax,extralines=extralines))
+f.close()
+del f
+
+nativeflag = ' '
+if options.nativeQE:
+  os.system('python input.py')
+  nativeflag = ' --native '
+if options.submit:
+  os.system('submitQE -n '+options.n_cpu+nativeflag+args[0]) 

@@ -1,0 +1,45 @@
+#!/usr/bin/env python
+#Script used to submit calculations of bare silicalite structures from adsorbtion complexes including hydrocarbons
+
+from string import Template
+import os,commands,random
+from sys import argv
+from mypython import mymkdir
+from ase.all import *
+
+tree = []
+
+for root, dirs, files in os.walk('.'):
+       #print 'root, dirs, files',root, dirs, files
+       tree.append([root, dirs, files])
+
+startdir = os.getcwd()
+included = []
+not_to_include = ['Frequencies','Barriers','opt_zeoliteonly'] 
+
+for m in tree:
+    if 'Restart' not in m[1]:
+	tag = True
+        for l in m[0].split('/'):
+          if l in not_to_include:
+             tag = False
+        if tag is True:
+            for n in m[2]:
+              if n == 'dyn.traj':
+                a = read(os.path.join(m[0],n))
+                maxforce = np.sqrt(np.sum(a.get_forces()**2.,axis=1)).max()
+		if maxforce <= 0.03:
+		  #os.chdir(m[0])
+                  #(res,junk) = commands.getstatusoutput('genopt_zeoliteonly')
+                  #if(res == 0):
+  		  if not(os.path.exists(os.path.join(m[0],'opt_zeoliteonly'))):
+		    os.chdir(m[0])
+ 		    os.system('genopt_zeoliteonly')
+		    os.chdir('opt_zeoliteonly')
+		    print 'Submitting from: '+os.getcwd()
+	    	    no = random.randint(1,10)
+		    if (no < 6): 
+		      os.system('gsub-suncat 32 suncat-long')
+		    else:
+		      os.system('gsub-lcls 32')
+	 	    os.chdir(startdir)

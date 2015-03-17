@@ -1,0 +1,6 @@
+#!/bin/sh
+#Script to extract execution directory from PID in the submitted_jobs.dat list
+pidline=( `grep $1 /usit/abel/u1/brogaard/submitted_jobs.dat` )
+echo ${pidline[1]}
+#quicker, but doesn't work for finished jobs
+#scontrol show job $1 | grep WorkDir | sed 's/   WorkDir=//'

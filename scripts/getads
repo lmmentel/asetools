@@ -1,0 +1,128 @@
+#!/usr/bin/env python
+#/cluster/software/VERSIONS/python2-2.7.3/bin/python
+#Script used to extract adsorption energies
+#Takes as input a filename of a file that contains
+#First line: the path of the molecule
+#Second line: the path of the bare structure
+#Third and following lines contain path of the adduct structures
+
+from string import Template
+import os,pickle,sys
+#from ase.all import *
+from ase.io import read
+from ase.units import kJ,mol,kcal
+from ase.thermochemistry import IdealGasThermo
+from optparse import OptionParser
+import numpy as np
+
+parser = OptionParser(usage='Script used to extract adsorption energies, given a file with directories as input. 3 lines: molecule, substrate, adsorbate structure')
+
+parser.add_option('--thermo',action='store_true',dest='thermo',default=False,help='Get thermochemical correction (True/False). Default=False')
+parser.add_option('--dimer',action='store_true',dest='dimer',default=False,help='Adsorption energy of dimer? Default=False')
+parser.add_option('--delta',dest='delta',default='0.005',help='Step value for the numerical 2nd derivatives d2E/d2x. Default=0.005')
+
+parser.add_option('-T',dest='T',default=298,help='Temperature to calculate adsorption enthalpy at. Default=298')
+
+parser.add_option('-v',dest='verbose',action='store_true',default=False,help='Verbose: True/False. Default=False.')
+
+(options,args) = parser.parse_args()
+options.T = int(options.T)
+
+try: 
+    filename = args[0]
+    f = open(filename,'r')
+except IndexError:
+    print 'Please provide a filename!'
+    sys.exit()
+
+moldir = f.readline().strip('\n')
+zeodir = f.readline().strip('\n')
+f.close()
+
+tree = []
+
+for root, dirs, files in os.walk('.'):
+       #print 'root, dirs, files',root, dirs, files
+       tree.append([root, dirs, files])
+
+molecule = read(moldir+'dyn.traj')
+e_mol = molecule.get_potential_energy()
+#print 'E_mol: ',e_mol
+zeodefault = read(zeodir+'dyn.traj')
+if options.thermo:
+	f = open(moldir+'Frequencies/delta_%s/vibenergies.pckl' % options.delta,'r')
+	vibenergies= pickle.load(f)
+	f.close()
+	thermomol = IdealGasThermo(vibenergies,'nonlinear',e_mol,molecule,symmetrynumber=1,spin=0) #NB: symmetry number has no influence on enthalpy, so it's ok to arbitrarily set it to 1
+	h_mol = thermomol.get_enthalpy(options.T,verbose=options.verbose)
+	try:
+	   f = open(zeodir+'Frequencies/delta_%s/ImmoThermo.pckl' % options.delta,'r')
+	   thermozeo = pickle.load(f)
+	   f.close()	
+	   h_zeo = thermozeo.get_internal_energy(options.T,verbose=options.verbose)
+	   s_zeo = thermozeo.get_entropy(options.T,verbose=options.verbose)
+	except:
+	   print 'Warning: couldnt read substrate thermo info. Assuming substrate has no vibrational contribution.'
+	   h_zeo = zeodefault.get_potential_energy()
+	
+
+included = []
+not_to_include = ['Frequencies','Barriers','opt_zeoliteonly','opt_substrate_only','convtest','pw='] 
+
+for m in tree:
+    #if m[1] != ['Restart']:
+    if not 'Restart' in m[1]:
+	tag = True
+        for l in m[0].split('/'):
+	   #if l in not_to_include:
+	   for ni in not_to_include:
+		if ni in l:
+             	  tag = False
+        if tag is True:
+            for n in m[2]:
+              if n == 'dyn.traj':
+                try:
+			a = read(os.path.join(m[0],n))
+		except:
+			print 'Couldnt read file'+os.path.join(m[0],n)
+			continue
+		zeopath = os.path.join(m[0],'opt_zeoliteonly/')
+		if os.path.exists(os.path.join(zeopath,'dyn.traj')):
+		   if os.path.exists(os.path.join(zeopath,'Restart/dyn.traj')):
+ 		      zeopath=zeopath+'Restart/'
+		   zeoopt = read(zeopath+'dyn.traj')
+		else:
+		   #print 'No opt_zeoliteonly/dyn.traj file. Using default'
+		   zeoopt = zeodefault
+                wline = ''
+                try:
+ 		   a_maxforce = np.sqrt(np.sum(a.get_forces()**2.,axis=1)).max()		
+		   zeo_maxforce = np.sqrt(np.sum(zeoopt.get_forces()**2.,axis=1)).max()
+		   if a_maxforce > 0.03:
+                     wline = ' (Warning! Not optimized, force=%.4f)' % a_maxforce
+		   if zeo_maxforce > 0.03:
+		     print '(Warning! Substrate not optimized, force=%.4f)' % zeo_maxforce
+		except :
+		   wline = ' (NB: forces not available)'
+	 	e_add = a.get_potential_energy()
+		e_zeo = zeoopt.get_potential_energy()
+		e_ads = e_add-e_mol-e_zeo
+		if options.dimer:
+		   e_ads = e_ads - e_mol
+		   #wline=wline+' NB: dimer. E_ads(avg)=%.2f eV' % e_ads/2.0
+		print m[0]+': %.2f eV (%.0f kJ/mol,%.1f kcal/mol)' % (e_ads,e_ads/kJ*mol,e_ads/kcal*mol) + wline
+		if options.thermo:
+		   try:
+		      f = open(os.path.join(m[0],'Frequencies/delta_%s/ImmoThermo.pckl' % options.delta))
+		      thermoadd = pickle.load(f)
+		      f.close()
+		      h_ads = thermoadd.get_internal_energy(options.T,verbose=options.verbose)-h_mol-h_zeo	
+		      print 'dH_ads(%sK): %.3f eV (%.0f kJ/mol,%.1f kcal/mol)' % (options.T,h_ads,h_ads/kJ*mol,h_ads/kcal*mol)
+		   except:
+		      print m[0]+': load of ImmoThermo.pckl failed'
+		      continue
+		   
+		   
+		#print m[0].rstrip('/Restart')+': %.2f eV (%.0f kJ/mol)' % (e_ads,e_ads/kJ*mol) + wline
+
+

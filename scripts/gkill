@@ -1,0 +1,16 @@
+#!/bin/sh
+#Wrapper script for the standard bkill command that also updates the submitted_files.dat list
+dir=/usit/abel/u1/brogaard
+file=$dir/submitted_files.dat
+
+scancel $@
+#attempt to do it in one sed call -- failed, and did loop instead. Not pretty, but works
+#s=/$@/d
+#echo $s
+#sed '${s}' $file > $dir/tmpsub
+for i in $*
+do
+echo $i
+sed /$i/d $file > $dir/tmpsub
+mv $dir/tmpsub $file
+done

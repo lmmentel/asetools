@@ -1,0 +1,34 @@
+#!/usr/local/bin/python2.7
+#Script to run the calculations necessary to derive DPE's
+from sys import argv,exit
+from string import Template
+from ase.io import read,write
+import os
+from optparse import OptionParser
+from mypython import mymkdir
+
+parser = OptionParser(usage='Script used to run DPE calculation.')
+
+parser.add_option('-i','--input',dest='readpath',default='../dyn.traj',help='Path to read protonated structure from. Default: ../dyn.traj.')
+parser.add_option('-n','--ncpu',dest='n_cpu',default='16',help='Number of CPUs. Default=16')
+parser.add_option('-q','--queue', dest='queue',default='suncat3-medium',
+                  help='Submitting queue. Default: suncat3-medium')
+parser.add_option('--xc',dest='xc',default='BEEF-vdW',help='Exchange Correlation functional. Default=BEEF-vdW')
+parser.add_option('--h',dest='h',default='0.2',help='Grid spacing. Default: 0.2 AA.')
+parser.add_option('-k','--kpoints',dest='kpts',default='(1,1,1)',help='k points. Default=(1,1,1)')
+
+(options,args) = parser.parse_args()
+print options
+
+f = open('/a/suncatfs1/u1/brogaard/bin/mypython/GPAW_DPE_template.py','r')
+template = Template(f.read())
+f.close()
+del f
+f = open('input.py','w')
+f.write(template.substitute(read=options.readpath,h=options.h,xc=options.xc,kpts=options.kpts))
+f.close()
+del f
+os.system('chmod +x input.py')
+submstring = 'gsub-suncat '+options.n_cpu+' '+options.queue+' input.py'
+print submstring
+os.system(submstring)

@@ -1,0 +1,33 @@
+#!/usr/bin/env python
+#Script used to extract IR freqs and intensities from a molden file and save it in a twocolumn format to be easily read
+import numpy as np
+from mypython import cm1_to_eV,readcols,foldFreqInt
+from sys import argv
+import pickle,os
+
+for filename in argv[1:]:
+   fname = filename.split('.')[0]
+   # Read the file. Output is a list of columns
+   awkstring = 'awk \'/DYNMAT/{flag=0}flag;/mode/{flag=1}\' %s > %s.IR' % (filename,fname)
+   os.system(awkstring)
+   cols = readcols(fname+'.IR')   #cols0: vib no, cols1: cm-1, cols2: freqs in THz, cols3: IR intensities in units of (D/A)^2/amu
+   os.system('rm %s.IR' % fname)
+   type = 'Gaussian'
+   width = 10
+   normalize = True
+   energies,spectrum = foldFreqInt(cols[1],cols[3],normalize=normalize,type=type,width=width,start=500) #start at 1 cm-1
+   spectrum2 = 1. - spectrum / spectrum.max()
+   outdata = np.empty([len(energies), 3])
+   outdata.T[0] = energies
+   outdata.T[1] = spectrum
+   outdata.T[2] = spectrum2
+   fd = open('IRspec_%s.dat' % fname,'w')
+   fd.write('# %s folded, width=%g cm^-1\n' % (type, width))
+   #iu, iu_string = self.intensity_prefactor(intensity_unit)
+   #if normalize:
+   #    iu_string = 'cm ' + iu_string
+   fd.write('# [cm^-1]  [(D/AA)^2 amu^-1]  [Normalized]')
+   for row in outdata:
+            fd.write('%.3f  %15.5e  %15.5e \n' % 
+                     (row[0], row[1], row[2]))
+   fd.close()

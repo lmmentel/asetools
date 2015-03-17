@@ -1,0 +1,31 @@
+#!/usr/local/bin/python2.7
+import subprocess as sp
+import sys
+import os
+from optparse import OptionParser
+import numpy as np
+import time
+
+jobID = int(sys.argv[1])
+
+bjout = sp.Popen('bjobs',shell=True,stdout=sp.PIPE)
+bjout =  bjout.communicate()
+bjout = bjout[0].split('\n')
+IDs = []
+statuses = []
+for line in bjout:
+    try:
+        splt = line.split()
+        IDs.append(int(splt[0]))
+    except:
+        pass
+#print 'Total Number of Jobs: ' ,len(IDs)
+#print '\t'.join(['Job ID', 'Username', 'Status', 'Submit Time', 'Run Time', 'Submission Directory'])
+id = jobID#IDs.index(jobID)
+cmd = 'bjobs -l ' + str(id)
+bjinfo = sp.Popen(cmd,shell=True,stdout=sp.PIPE)
+bjinfo = bjinfo.communicate()
+bjinfo = bjinfo[0]
+bjinfo=bjinfo.replace('\n','').replace('\t','').replace(' ','')
+bjinfo = bjinfo.split('CWD<')[1].split('>')[0]
+print bjinfo

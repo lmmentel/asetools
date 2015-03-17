@@ -1,0 +1,17 @@
+#!/usr/local/bin/python2.7
+from ase.io import read,write
+from ase.io.bader import attach_charges
+from ase.visualize import view
+from sys import argv
+
+# define the molecule as above
+atoms = read(argv[1])
+
+# the next two lines are equivalent (only one needed)
+attach_charges(atoms, 'ACF.dat')
+
+#view(atoms)
+
+for atom in atoms:
+    print 'Atom', atom.symbol+'('+str(atom.index)+')', 'Bader charge', atom.charge
+

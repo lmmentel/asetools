@@ -1,0 +1,18 @@
+#!/bin/sh
+#Script used to rerun a calculation with BEEF
+##NB NB: must be executed in the directory in which the original job
+##was performed.
+dir='BEEF'
+mkdir $dir
+cp submscript $dir/
+sed "s#\(xc='\).*\('\)#\1BEEF-vdW\2#" input.py > $dir/temp
+cd $dir
+sed "s#\(read('\).*\(')\)#\1../dyn.traj\2#" temp > input.py
+sed /calc.initialize\(atoms\)/d input.py > temp
+echo "#change the unit cell to BEEF-vdW parameters
+import numpy as np
+cell = np.array([[13.89,0.0,0.0],[-6.94,12.03,0.0],[0.0,0.0,8.59]])
+atoms.set_cell(cell*[1,1,2],scale_atoms=True)
+calc.initialize(atoms)" >> temp
+mv temp input.py
+#python input.py

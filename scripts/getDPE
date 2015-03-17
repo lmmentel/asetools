@@ -1,0 +1,56 @@
+#!/usr/local/bin/python2.7
+from ase.io import write,read
+import numpy as np
+from ase.visualize import view
+from ase import units
+from optparse import OptionParser
+import pickle
+import os,sys
+
+parser = OptionParser(usage='Script used to extract deprotonation energy from pbc calculations.')
+
+parser.add_option('-e','--epsilon', dest='epsilon',default=1.0,
+                  help='Dielectric constant, scaling the interaction between an isolated charge and the homogeneous jellium background. Default: 1.0')
+parser.add_option('-u','--unit', dest='unit',default='eV',
+                  help='Unit, choose either eV or kJmol. Default: eV')
+
+(options,args) = parser.parse_args()
+eps = options.epsilon
+unit = 1
+unit_string = ' eV'
+unitround = 2 #number of decimals
+if options.unit == 'kJmol':
+   unit = units.kJ/units.mol
+   unit_string = ' kJ/mol'
+   unitround = 0
+
+try:
+   E_AH = read('AH.traj').get_potential_energy() #read zeolite including  proton
+   E_A = read('A-.traj').get_potential_energy()
+   E_H = read('H+.traj').get_potential_energy()
+except IOError:
+   print 'getDPE: One or more traj files not present. Exiting...'
+   sys.exit(1)
+
+#thermo = pickle.load(open('Frequencies/delta_0.015/ImmoThermo.pckl','r'))
+ZPE = 0.0#sum(thermo.vib_energies)*0.5
+
+f = open('input.py')
+lines = f.read()
+E_Href = -12.490167 #GPAW atomic reference energy
+
+if lines.find('GPAW')>0:
+	with open('out.log', 'r') as inF:
+	    for line in inF:
+        	if 'Potential shift will be' in line:
+		  corr = 0.5*float(line.split()[4])*units.Ha/eps
+		  print 'Correction from periodic charge in jellium background: %.4f eV' % corr #
+		  break
+
+	print 'DPE (GPAW):',np.round((E_A+E_H-E_AH-ZPE)/unit,unitround),unit_string
+elif lines.find('espresso')>0:
+    	E_protpbc = E_H
+	print 'Correction from charged background: %.4f eV' % (-E_H/eps)
+	print 'DPE (QE):',np.round((E_A+E_H-E_AH-ZPE)/unit,unitround),unit_string
+else:
+	print 'Calculator is neither GPAW nor espresso. Exiting...'

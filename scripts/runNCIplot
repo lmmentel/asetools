@@ -1,0 +1,44 @@
+#!/usr/bin/env python
+#Script for submitting pp.x jobs to generate the necessary files for an NCI plot
+
+from string import Template
+import os,numpy
+from optparse import OptionParser
+
+parser = OptionParser(usage='Script used to submit pp.x jobs for generating files for an NCI plot.')
+
+parser.add_option('-f','--format',dest='ext',default='cube',help='Format of output files (for now only cube implemented). Default=cube')
+parser.add_option('--prefix',dest='prefix',default='calc',help='Prefix for quantum espresso. Default=calc')
+
+(options,args) = parser.parse_args()
+homedir = os.getenv("HOME")
+formatdict = {'cube':'6'}
+
+f = open(homedir+'/mypython/templates/pp_template.py')
+pptemp = Template(f.read())
+f.close()
+tempstring = 'mpirun pp.x < pp_%s.inp > pp_%s.out\n'
+commands = ''
+for name,onum in zip(['RDG','NCIcolor'],[19,20]):
+  f = open('pp_%s.inp' % name,'w')
+  f.write(pptemp.substitute(prefix=options.prefix,plot_num=str(onum),output_format=formatdict[options.ext],fileout='%s.%s' % (name,options.ext)))
+  f.close()
+  commands += tempstring % (name,name)
+
+commands += 'rm filplot'
+
+cpupars = '--nodes=%s --ntasks-per-node=%d' % (1,1)
+modules = 'espresso/5.0.3_beef' #5.0.3 is 5.0.2 with openmpi1.8
+
+#f = open(homedir+'/bin/SLURMtemplate.py','r')
+#template = Template(f.read())
+#f.close()
+#f = open('submscript_NCI','w')
+#f.write(template.substitute(jobname='ppNCI',projectno='nn4683k',time='00:12:00',cpupars=cpupars,modules=modules,SCRATCH='$SCRATCH',SUBMITDIR='$SUBMITDIR',JOB_ID='$JOB_ID',HOME='$HOME',chkfiles='',commands=commands))
+#f.close()
+
+#os.system('mysbatch submscript_NCI')
+os.system('module load espresso/5.0.3_beef')
+os.system('pp.x < pp_RDG.inp > pp_RDG.out')
+os.system('pp.x < pp_NCIcolor.inp > pp_NCIcolor.out')
+os.system('rm filplot')

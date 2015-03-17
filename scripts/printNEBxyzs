@@ -1,0 +1,10 @@
+#!/bin/sh
+
+iter=$1
+
+printPics -i initial.traj -f xyz
+for ((i=1;i<=$iter;i++))
+do
+  printPics -i neb$i.traj -f xyz
+done
+printPics -i final.traj -f xyz

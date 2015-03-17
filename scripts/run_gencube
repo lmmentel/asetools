@@ -1,0 +1,43 @@
+#!/usr/local/bin/python2.7
+#Script used to run a calculation to get a BEEF calculation with standard parameters, to get a .gpw file and a .cube file.
+
+from string import Template
+import os
+from sys import argv
+from mypython import mymkdir
+
+try: 
+    filename = argv[1]
+    print 'filename: ',filename
+except IndexError:
+    print 'using default filename = dyn.traj'
+    filename = 'dyn'
+try:
+    n_cpu = argv[2]
+    print 'n_cpu:',n_cpu
+except IndexError:
+    print 'using default n_cpu = 16'
+    n_cpu = 16
+try:
+    queue = argv[3]
+    print 'queue:',queue
+except IndexError:
+    print 'using default queue = suncat3-short'
+    queue = 'suncat3-short'
+
+mymkdir('gencube')
+os.chdir('gencube')
+
+# Import the template into a template object.
+f = open('/a/suncatfs1/u1/brogaard/bin/mypython/gencube_template.py','r')
+template = Template(f.read())
+f.close()
+del f
+inputfile = filename+'_gencube.py'
+f = open(inputfile,'w')
+f.write(template.substitute(xc='BEEF-vdW',h='0.2',input='../'+filename+'.traj',out=filename))
+f.close()
+del f
+
+os.system('gsub-suncat '+str(n_cpu)+' '+queue+' '+inputfile)
+

@@ -1,0 +1,42 @@
+#!/usr/bin/env python
+import matplotlib.pyplot as plt
+import numpy as np
+from mypython import cm1_to_eV,readcols
+from sys import argv
+import pickle
+from optparse import OptionParser
+
+parser = OptionParser(usage='Script used to print IR spectra.')
+parser.add_option('--start', dest='start',default=500,help='Defines the starting point of the spectrum, in cm-1. Default=500')
+parser.add_option('--end', dest='end',default=4000,help='Defines the end point of the spectrum, in cm-1. Default=4000')
+parser.add_option('--scale',dest='scale',default=1.0,help='Scale spectrum x-axis by factor. Default: 1.0')
+
+(options,args) = parser.parse_args()
+
+fig = plt.figure(figsize=(8.5,4))
+ax = fig.add_subplot(111,xlabel=r'cm$^{-1}$',ylabel=r'$(D/\AA)^2$')
+ax.grid()
+legends = []
+i = int(options.start)
+f = int(options.end)
+
+
+for filename in args:
+   # Read the file. Output is a list of columns
+   cols = readcols(filename)
+   xv = np.array(cols[0])*float(options.scale)
+   yv = np.array(cols[1])
+   #f = open(filename,'r')
+   #ImmoThermo = pickle.load(f)
+   #f.close()
+   #xv = ImmoThermo.vib_energies/cm1_to_eV
+   #heights = [1]*len(xv)
+   #p1 = ax.bar(xv,heights,10)	
+   ax.plot(xv,yv)
+   legends.append(filename+'(scale=%s)' % options.scale)
+
+ax.legend(legends,'best')
+# now, plot the data:
+fig.tight_layout()
+fig.savefig('ir-spectrum.pdf')
+plt.show()

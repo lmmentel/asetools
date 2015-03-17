@@ -1,0 +1,31 @@
+#!/usr/local/bin/python2.7
+#Script used to run a DOS calculation based on a previous GPAW calculation
+from string import Template
+import os,errno
+from sys import argv,exit
+from commands import getoutput
+from ase import Atoms
+from ase.io import read,write
+from mypython import mymkdir,get_selected_atom_indices
+
+mymkdir('DOS')
+angulars = list(argv[1].translate(None,',[]'))
+
+# Import the template into a template object.
+tdir = '/a/suncatfs1/u1/brogaard/bin/mypython/'
+f = open(tdir+'dos_template_gpaw.py','r')
+template = Template(f.read())
+f.close()
+del f
+
+atoms = read('dyn.traj')
+atomlist = get_selected_atom_indices(atoms,argv[2])
+
+os.chdir('DOS')
+f = open('dos.py','w')
+f.write(template.substitute(readpath='../dyn.traj',angular_list=angulars,atomno_list=atomlist))
+f.close()
+del f
+os.system(str(argv[3:]))
+
+os.chdir('../')

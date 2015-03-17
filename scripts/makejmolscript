@@ -1,0 +1,68 @@
+#!/bin/sh
+# (POSIX shell syntax)
+
+usage() {
+ echo "Generates a jmol script for saving an image of the input file."
+ echo "Usage example: -r1 \"x 180\" -r2 \"y -85\" -r3 \"180 z\" -o [png|jpg] $1"
+}
+
+#Standard values are rotation of 0 degrees around x,y and z axis
+rot1=""
+rot2=""
+rot3=""
+format=png
+template=/Users/rasmusbrogaard/Dropbox/Work/bin/jmol_template
+pwd=`pwd`
+
+while :
+do
+    case $1 in
+        -h | --help | -\?)
+            #  Call your Help() or usage() function here.
+            usage
+	    exit 0
+            ;;
+        -r1 | --rotation1)
+            rot1="rotate $2"     
+            shift 2
+            ;;
+        -r2 | --rotation2)
+            rot2="rotate $2"     
+            shift 2
+            ;;
+	-r3 | --rotation3)
+            rot3="rotate $2"     
+            shift 2
+            ;;
+        -o | --outputformat)
+	    format=$2
+	    shift 2
+	    ;;
+        --) # End of all options
+            shift
+            break
+            ;;
+        -*)
+            echo "WARN: Unknown option \(ignored\): $1" >&2
+            shift
+            ;;
+        *)  # no more options. Stop while loop
+            break
+            ;;
+    esac
+done
+
+# Suppose some options are required. Check that we got them.
+
+#if [ ! "$file" ]; then
+#    echo "ERROR: option '--file FILE' not given. See --help" >&2
+#    exit 1
+#fi
+if [ ! -f $1 ]; then
+   echo "ERROR: file $1 does not exist"
+   exit 1
+fi
+
+fname=${1%\.*} #strip off file ending
+
+sed -e "s/ROT1/$rot1/" -e "s/ROT2/$rot2/" -e "s/ROT3/$rot3/" -e "s?INFILE?$1?" -e s/FORMAT/$format/ -e s?OUTFILE?$fname.$format? $template > $fname.jmol

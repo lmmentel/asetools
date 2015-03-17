@@ -1,0 +1,62 @@
+#!/usr/local/bin/python2.7
+import subprocess as sp
+import numpy as np
+import time
+import sys
+
+if len(sys.argv) > 1:
+    showall = True
+else:
+    showall = False
+
+bjout = sp.Popen('bjobs -a ',shell=True,stdout=sp.PIPE)
+bjout =  bjout.communicate()
+bjout = bjout[0].split('\n')
+IDs = []
+status = []
+date = []
+monthdict = {'Jan':1,'Feb':2,'Mar':3,'Apr':4,'May':5,'Jun':6,'Jul':7,'Aug':8,'Sep':9,'Oct':10,'Nov':11,'Dec':12}
+for line in bjout:
+    try:
+        splt = line.split()
+        IDs.append(int(splt[0]))
+        status.append(splt[2])
+        date.append(' '.join([splt[-3],splt[-2],splt[-1]]))
+    except:
+        pass
+print 'Total Number of Jobs: ' ,len(IDs)
+print '\t'.join(['Job ID', 'Username', 'Status', 'Submit Time', 'Run Time', 'Submission Directory'])
+for i,id in enumerate(IDs):
+    cmd = 'bjobs -l ' + str(id)
+    bjinfo = sp.Popen(cmd,shell=True,stdout=sp.PIPE)
+    bjinfo = bjinfo.communicate()
+    bjinfo = bjinfo[0]
+    bjlines = bjinfo.split('\n')
+    bjinfo=bjinfo.replace('\n','')    
+    bjinfo = ' '.join(bjinfo.split())
+    command = bjinfo.split('Command <')[1].split('>')[0]
+    filename = command.split()[-1]
+    bjinfo = bjinfo.replace(' ','')
+    bjinfo = bjinfo.split('CWD<')[1].split('>')[0]
+    if showall == False:
+        bjinfo = bjinfo.split('/')[-1]
+    if 'RUN' in status[i]:
+        runinfo = [l for l in bjlines if 'Started' in l][0]
+        runinfo = ':'.join(runinfo.split(':')[0:2])
+        month = runinfo.split()[1]
+        month =  monthdict[month]
+        day = runinfo.split()[2]
+        tm = runinfo.split()[3]
+        hr = tm.split(':')[0]
+        min = tm.split(':')[1]
+        now = time.localtime()
+        then = list(time.localtime())
+        then[1] = int(month)
+        then[2] = int(day)
+        then[3] = int(hr)
+        then[4] = int(min)
+        then = tuple(then)
+        diff =  time.mktime(now) - time.mktime(then)
+        runtime = np.round(diff/3600.0,2)
+    else: runtime = 0
+    print '\t'.join([str(id), str(status[i]), str(date[i]), str(runtime), str(bjinfo)])

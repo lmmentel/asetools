@@ -1,0 +1,42 @@
+#!/usr/bin/env python
+#Script writing a set of images from a .traj file in the cwd
+from mypython import printPics,mymkdir
+from sys import argv
+from ase.io import read,write,pov
+import os
+from optparse import OptionParser
+
+parser = OptionParser(usage='Script for printing images or xyz files of the output from an ASE calculation, in selected perspectives')
+parser.add_option('-d','--dir', dest='outdir',default=os.getcwd()+'/',
+                  help='choose output directory (will be made if not present)')
+parser.add_option('-i','--input', dest='readname',default='dyn.traj',
+                  help='set input/output file basename')
+parser.add_option('-o','--output', dest='writename',default='',
+                  help='set output file basename')
+parser.add_option('-f','--format', dest='format',default='eps',
+                  help='set output file format')
+
+(options,args) = parser.parse_args()
+#Not very elegant way of making the default output name equal the input
+if options.writename == '':
+    options.writename = options.readname
+print options
+
+atoms = read(options.readname)
+bondpairs = pov.get_bondpairs(atoms,radius=1.1)
+rot = '-90y,-20x'
+textures = ['pale']*len(atoms)
+#highlight = [69,54,60,59,68,51,6,18,35,11,27,15,144] #72 (Ni2) or 144 (Ni1)
+highlight = [196,148,132,90,126,102,137,147,195,171,160]
+highlight = [183,172]#[197,173,292,293,162,198,3,133,91,127,103,138,2,197]
+
+for i in highlight:
+   textures[i] = 'simple'
+for i,a in enumerate(atoms):
+   if a.symbol == 'Al':
+	  textures[i] = 'glass' 
+   if a.symbol in ['Ni','C','H']:
+	  textures[i] = 'ase3'
+
+#printPics(atoms,basename=options.writename,outdir=options.outdir,filetype=options.format)
+write(options.writename+'.pov',atoms,rotation=rot,run_povray=False,pause=True,camera_type='orthographic',transparent=False,show_unit_cell=0,textures=textures)

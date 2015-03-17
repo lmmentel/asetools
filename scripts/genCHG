@@ -1,0 +1,11 @@
+#!/bin/sh
+
+i=0
+while [ "$i" -le "$1" ]; do
+   echo neb$i...
+   cd neb_000$i/qe*/calc.save/
+   tar czf chg.tgz charge-density.dat data-file.xml spin-polarization.dat
+   cd ../../../
+   ((i++))
+done
+echo 'done'

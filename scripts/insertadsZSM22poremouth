@@ -1,0 +1,48 @@
+#!/usr/bin/env python
+#Script used to run calculations of adsorbates inside zeolite ZSM22
+from string import Template
+import os
+from sys import argv
+from commands import getoutput
+
+basedir = '/a/suncatfs1/u1/brogaard/'
+zeopath = basedir+'zeolites/ZSM22/Primitive_1x1x3/poremouth/'
+
+try:    
+    zeotype = argv[2]
+    if zeotype == '1':
+	zeopath=zeopath+'Hzeolite/Oout/' #to be filled out, if used
+    elif zeotype == '2':
+	zeopath=zeopath+'silicalite/ads_template_bottomfixed.traj'
+except IndexError:
+    print 'Please indicate either zeolite (1) or silicalite (2)'
+    exit
+try:
+    moldir = argv[1]
+except IndexError:
+    print 'directory of molecule has to be provided!'
+    exit
+
+print 'moldir:',moldir
+print 'zeopath:',zeopath
+
+# Import the template into a template object.
+tdir = basedir+'bin/mypython/'
+f = open(tdir+'ZSM22_addmolecule_template.py','r')
+template = Template(f.read())
+f.close()
+del f
+f = open('input.py','w')
+f.write(template.substitute(readpath=zeopath,moleculepath=moldir,zdisplace=0.7))
+f.close()
+del f
+os.system('python input.py')
+f = open(tdir+'ZSM22_BEEFporemouthads_template.py','r')
+template = Template(f.read())
+f.close()
+del f
+f = open('input.py','w')
+f.write(template.substitute(readpath='startguess.traj'))
+f.close()
+del f
+os.system('gsub-sun 24 suncat2-medium')

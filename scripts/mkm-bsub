@@ -1,0 +1,3 @@
+#!/bin/tcsh
+source /u/if/ajmedfor/nfs/programs/setupenv2.7
+/afs/slac/g/suncat/bin/dobsub $argv

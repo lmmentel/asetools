@@ -1,0 +1,53 @@
+#!/bin/sh
+# (POSIX shell syntax)
+
+usage() {
+ echo "Writes images from predefined angles of ZSM22 xyz files."
+ echo "Usage: -n BASENAME -o [png|jpg|?] $1"
+}
+
+format=png #png is default output format
+
+while :
+do
+    case $1 in
+        -h | --help | -\?)
+            #  Call your Help() or usage() function here.
+            usage
+	    exit 0
+            ;;
+        -o | --outputformat)
+	    format=$2
+	    shift 2
+	    ;;
+        -n | --basename)
+	    bname=$2
+	    shift 2
+	    ;;
+        --) # End of all options
+            shift
+            break
+            ;;
+        -*)
+            echo "WARN: Unknown option \(ignored\): $1" >&2
+            shift
+            ;;
+        *)  # no more options. Stop while loop
+            break
+            ;;
+    esac
+done
+
+if [ ! "$bname" ]; then
+    echo "Option '-n BASENAME' not given. Using default: dyn"
+    bname=dyn
+fi
+
+makejmolscript -r1 "180 y" -r2 "55 z" -o $format $bname\_front.xyz
+makejmolscript -r1 "-55 z" -o $format $bname\_back.xyz
+makejmolscript -r1 "y -90" -r2 "x 60" -o $format $bname\_siteside.xyz
+makejmolscript -r1 "y 90" -o $format $bname\_sitetop.xyz
+
+cat $bname*.jmol > $bname\_all.jmol
+jmol $bname\_all.jmol
+rm $bname*jmol

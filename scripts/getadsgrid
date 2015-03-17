@@ -1,0 +1,41 @@
+#!/usr/local/bin/python2.7
+#Retrieval of adsorption energies from calculations using a series of grid spacings
+import numpy as np
+from ase.optimize import BFGS
+from ase.io import read
+from ase.data.molecules import molecule
+from ase.visualize import view
+import os
+from mypython import mymkdir
+from string import Template
+
+tree = []
+
+for root, dirs, files in os.walk('.'):
+       #print 'root, dirs, files',root, dirs, files
+       tree.append([root, dirs, files])
+
+startdir = os.getcwd()
+
+for m in sorted(tree):
+    e_ads = 0
+    e_mol = 0
+    e_sub = 0
+    if 'Restart' not in m[1]:
+       for n in m[2]:
+	  try:
+		if 'ads' in n:
+	   	  e_ads = read(m[0]+'/'+n).get_potential_energy()
+	  	elif 'molecule' in n:
+	    	  e_mol = read(m[0]+'/'+n).get_potential_energy()
+	  	elif 'substrate' in n:
+	    	  e_sub = read(m[0]+'/'+n).get_potential_energy()
+	  except IOError, e: 
+		print 'Warning, couldnt read '+n+' in '+m[0]
+	  except ValueError, e:
+		#print 'Warning, incomplete file',n
+		pass
+	  except RuntimeError, e:
+		print n,e
+       if e_ads != 0 and e_mol != 0 and e_sub != 0:
+          print 'Ads. energy (%s):\t' % m[0],np.round((e_ads-e_sub-e_mol),4),'eV'

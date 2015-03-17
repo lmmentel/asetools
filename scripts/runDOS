@@ -1,0 +1,33 @@
+#!/usr/bin/env python
+#Script used to run a DOS calculation using Quantum Espresso
+from string import Template
+import os,errno
+from sys import argv,exit
+from mypython import mymkdir
+
+mymkdir('DOS')
+
+# Import the template into a template object.
+tdir = '/usit/abel/u1/brogaard/mypython/templates/'
+f = open(tdir+'dos_template_espresso.py','r')
+template = Template(f.read())
+f.close()
+del f
+
+sed = os.popen('sed -n -e /espresso\(/,/\)/p input.py','r') #extracts lines with definition of calculator and initialization of magnetic moments
+grep = os.popen('grep set_init_magmoms\( input.py','r')
+
+calcstring = sed.read().split('=',1)[1]+grep.read() #the split call gets rid of name of calculator object
+sed.close()
+grep.close()
+
+os.chdir('DOS')
+f = open('dos.py','w')
+f.write(template.substitute(readpath='../dyn.traj',calculator=calcstring))
+f.close()
+del f
+os.system('sed -e /onlycreatepwinp/d -e s/encut/500/ -e s/dcut/7000/ dos.py > dos.temp')
+os.system('mv dos.temp dos.py')
+
+os.system('submitQE -i dos.py 02:00:00')
+os.chdir('../')

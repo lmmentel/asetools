@@ -1,0 +1,13 @@
+#!/usr/bin/env python
+
+from ase.io import read
+from sys import argv
+import numpy as np
+
+s1 = read(argv[1])
+s2 = read(argv[2])
+
+posdiffs = np.sqrt(np.sum((s1.get_positions()-s2.get_positions())**2,axis=1))
+
+print 'Max. pos. displ. %.5f AA' % posdiffs.max()
+print 'Sum. pos diffs %.5f AA' % np.sum(posdiffs)

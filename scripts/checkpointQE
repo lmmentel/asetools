@@ -1,0 +1,19 @@
+#!/bin/bash
+#Script for checkpointing pw.out of running QE jobs
+PATH=$HOME/bin:$PATH  #to update environment for cron
+
+if [ "$1" == '' ]
+then
+  pids=`squeue -u $USER -t R | awk '{if ($1 != "JOBID") print $1}' | tr '\n' ' '`
+else 
+  pids=$1
+fi
+if [ "$pids" != '' ]
+then
+  for pid in $pids
+  do
+      wdir=`scontrol show job $pid | grep WorkDir | sed 's/   WorkDir=//'`
+      cp /work/jobs/$pid.d/pw.out $wdir/pw.out_`date +%b%d-%k:%M`
+  done
+  echo "`date`: Quantum espresso jobs checkpointed ( $pids)"
+fi

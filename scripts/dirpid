@@ -1,0 +1,5 @@
+#!/bin/sh
+#Script to extract the PID from an execution directory in the submitted_jobs.dat list
+
+pidline=( `grep $1 /afs/slac.stanford.edu/u/if/brogaard/submitted_files.dat` )
+echo ${pidline[0]}

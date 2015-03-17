@@ -1,0 +1,10 @@
+#!/bin/csh
+#Kill a list of jobs and resubmit all of them with the same command
+#NB command has to be an alias!
+#11912: script doesn't work!
+
+set com = $argv[1]
+foreach i ( $argv[2-$#argv] )
+resubm $i $com
+end
+

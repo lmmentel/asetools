@@ -1,0 +1,42 @@
+#!/usr/local/bin/python2.7
+import subprocess as sp
+import sys
+import os
+from optparse import OptionParser
+import numpy as np
+import time
+
+jobID = int(sys.argv[1])
+
+if len(sys.argv) > 2:
+    submission_cmd = sys.argv[2]
+else:
+    submission_cmd = 'gsub-suncat 16 suncat3-medium'
+
+if len(sys.argv) > 3:
+    filename = sys.argv[3]
+else:
+    filename = None
+
+id = jobID
+cmd = 'bjobs -l ' + str(id) +' | grep -4 Submitted'
+bjinfo = sp.Popen(cmd,shell=True,stdout=sp.PIPE)
+bjinfo = bjinfo.communicate()
+bjinfo = bjinfo[0]
+bjlines = bjinfo.split('\n')
+bjinfo=bjinfo.replace('\n','')    
+bjinfo = ' '.join(bjinfo.split())
+command = bjinfo.split('Command <')[1].split('>')[0]
+if not filename:
+    filename = command.split()[-1]
+bjinfo = bjinfo.replace(' ','')
+bjinfo = bjinfo.split('CWD<')[1].split('>')[0]
+killcmd = 'gkill ' + str(jobID)
+resubcmd = submission_cmd + ' ' + filename
+print 'Killing...'
+kill = sp.Popen(killcmd,shell=True,stdout=sp.PIPE)
+out,err = kill.communicate()
+print out
+print 'Resubmitting...'
+os.chdir(bjinfo)
+os.system(resubcmd)

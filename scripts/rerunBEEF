@@ -1,0 +1,12 @@
+#!/bin/sh
+#Script used to rerun a calculation with BEEF
+##NB NB: must be executed in the directory in which the original job
+##was performed.
+dir='BEEF'
+mkdir $dir
+cp submscript $dir/
+sed "s#\(xc='\).*\('\)#\1BEEF-vdW\2#" input.py > $dir/temp
+cd $dir
+sed "s#\(read('\).*\(')\)#\1../dyn.traj\2#" temp > input.py
+rm temp
+#python input.py
