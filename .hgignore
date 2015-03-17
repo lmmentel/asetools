@@ -1,0 +1,6 @@
+syntax: glob
+asetools.egg-info/**
+build/**
+dist/**
+*.pyc
+.*.swp
