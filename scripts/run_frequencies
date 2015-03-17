@@ -1,36 +1,38 @@
 #!/usr/bin/env python
-#Script used to run a frequency calculation
+
+'''Script used to run a frequency calculation'''
+
 from sys import argv,exit
 from string import Template
 from ase.io import read,write
 import os
-from optparse import OptionParser
+from argparse import ArgumentParser
 from mypython import mymkdir
 
-parser = OptionParser(usage='Script used to run a frequency calculation.')
+parser = ArgumentParser(usage='Script used to run a frequency calculation.')
 
-parser.add_option('--native', action="store_true", dest='nativeQE',default=False,help='Runs internal espresso routines, instead of through the ase-espresso interface')
-parser.add_option('--IR', action="store_true", dest='IR',default=False,help='Calculate IR intensities. Only possible if --native specified.')
-parser.add_option('--grimme',action="store_true",dest='grimme',default=False,help='Turn on Grimme DFT-D2 dispersion correction.')
-parser.add_option('-d','--dir', dest='outdir',default=os.getcwd()+'/Frequencies',
+parser.add_argument('--native', action="store_true", dest='nativeQE',default=False,help='Runs internal espresso routines, instead of through the ase-espresso interface')
+parser.add_argument('--IR', action="store_true", dest='IR',default=False,help='Calculate IR intensities. Only possible if --native specified.')
+parser.add_argument('--grimme',action="store_true",dest='grimme',default=False,help='Turn on Grimme DFT-D2 dispersion correction.')
+parser.add_argument('-d','--dir', dest='outdir',default=os.getcwd()+'/Frequencies',
                   help='choose output directory (will be made if not present)')
-parser.add_option('-i','--input', dest='readname',default='../../dyn.traj',
+parser.add_argument('-i','--input', dest='readname',default='../../dyn.traj',
                   help='Name and (relative) path of input file')
-parser.add_option('--indices',dest='indices',default='[]',help='Indices of atoms to be displaced. Default: all indices')
-parser.add_option('-n','--ncpus', dest='n_cpu',default='16',
+parser.add_argument('--indices',dest='indices',default='[]',help='Indices of atoms to be displaced. Default: all indices')
+parser.add_argument('-n','--ncpus', dest='n_cpu',default='16',
                   help='Requested number of cores. Default=16')
-parser.add_option('-m','--method',dest='method',default='standard',help='Method used in summary(),eg. frederiksen')
-parser.add_option('--delta',dest='delta',default='0.005',help='Displacement (in Aa) used for numerical differentiation. Default=0.005 Aa')
-parser.add_option('--kpts',dest='kpts',default='\'gamma\'',help='Definition of kpts spanning the Brillouin zone. Default=gamma (special qe trick compared to (1,1,1))')
-parser.add_option('--sigma',dest='sigma',default='0.1',help='Fermi smearing, sigma. Default=0.1')
-parser.add_option('--nfree',dest='nfree',default=2,help='Number of displacement steps used in numerical differentiation. Default=2')
-parser.add_option('--xc',dest='xc',default='BEEF-vdW',help='Exchange Correlation functional. Default=BEEF-vdW')
-parser.add_option('--cutoff',dest='pw',default='500',help='Planewave energy cutof. Default value: 500 eV')
-parser.add_option('--dcutoff',dest='dw',default='7000',help='Planewave energy cutof. Default value: 7000 eV')
-parser.add_option('--magmoms',dest='magmomidxs',default='',help='Provide a list of initial magnetic moments of the form \'(atomid,magmom),...\'. Default=\'\', i.e. non-spinpolarized calculation.')
-parser.add_option('--thermo',dest='thermo',default='HarmonicXDfree',help='Do calculation of thermochemistry? Possible values: IdealGas,HarmonicXDfree,None. Default: HarmonicXDfree')
+parser.add_argument('-m','--method',dest='method',default='standard',help='Method used in summary(),eg. frederiksen')
+parser.add_argument('--delta',dest='delta',default='0.005',help='Displacement (in Aa) used for numerical differentiation. Default=0.005 Aa')
+parser.add_argument('--kpts',dest='kpts',default='\'gamma\'',help='Definition of kpts spanning the Brillouin zone. Default=gamma (special qe trick compared to (1,1,1))')
+parser.add_argument('--sigma',dest='sigma',default='0.1',help='Fermi smearing, sigma. Default=0.1')
+parser.add_argument('--nfree',dest='nfree',default=2,help='Number of displacement steps used in numerical differentiation. Default=2')
+parser.add_argument('--xc',dest='xc',default='BEEF-vdW',help='Exchange Correlation functional. Default=BEEF-vdW')
+parser.add_argument('--cutoff',dest='pw',default='500',help='Planewave energy cutof. Default value: 500 eV')
+parser.add_argument('--dcutoff',dest='dw',default='7000',help='Planewave energy cutof. Default value: 7000 eV')
+parser.add_argument('--magmoms',dest='magmomidxs',default='',help='Provide a list of initial magnetic moments of the form \'(atomid,magmom),...\'. Default=\'\', i.e. non-spinpolarized calculation.')
+parser.add_argument('--thermo',dest='thermo',default='HarmonicXDfree',help='Do calculation of thermochemistry? Possible values: IdealGas,HarmonicXDfree,None. Default: HarmonicXDfree')
 
-(options,args) = parser.parse_args()
+args = parser.parse_args()
 #args[0] is time
 spinpol=False
 if options.magmomidxs: #initial magmoms are set; turn on spin-polarized calculation
@@ -116,3 +118,6 @@ print options
 print submstring
 os.system(submstring)
 os.chdir(cwddir)
+
+if __name__ == "__main__":
+    main()
