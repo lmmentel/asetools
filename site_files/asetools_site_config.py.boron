@@ -15,4 +15,6 @@ config = {
                   '/share/apps/intel/composer_xe_2015.1.133/mkl/lib/intel64'], 
     "python"    : "/home/lmentel/.virtualenvs/py2.7.9/bin/python",
     "scratch"   : os.path.join("/scratch", os.getenv("USER")), 
+    "vars"      : [("ESP_PSP_PATH", os.getenv("ESP_PSP_PATH")),
+                   ("PATH", os.getenv("PATH"))],
 }

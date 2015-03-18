@@ -109,6 +109,9 @@ def submit_pbs(args):
         script.write("#PBS -l walltime={0}\n\n".format(args['walltime']))
         if args['lib_paths'] is not None and args['lib_paths'] != "":
             script.write('export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:{0:<s}\n\n'.format(":".join(args['lib_paths'])))
+        if args['vars']:
+            for name, value in args['vars']:
+                script.write("export {n}={v}\n".format(n=name, v=value))
         script.write("cd $PBS_O_WORKDIR\n")
         if args['scratch']:
             wrkdir = os.path.join(args['scratch'], args['jobname'])
