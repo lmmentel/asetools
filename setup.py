@@ -109,6 +109,7 @@ setup(
     ],
     description = "convenience scripts for ASE",
     install_requires = [
+        "ase",
         "numpy",
     ],
     license = open("LICENSE.txt", "r").read(),
