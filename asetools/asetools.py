@@ -8,6 +8,28 @@ import numpy as np
 Ry_to_eV = 13.605698066
 cm1_to_eV = 0.000123984257314843
 
+
+def merge_two_dicts(x, y):
+    '''Given two dicts, merge them into a new dict as a shallow copy.'''
+    z = x.copy()
+    z.update(y)
+    return z
+
+def get_config(fname=None):
+    '''
+    Retrieve the information on the batch submission and environment from 
+    the asetools_site_config.py'''
+
+    if fname is None:
+        fname = ".asetools_site_config.py"
+        fpath = os.path.join(os.getenv("HOME"), fname)
+    else:
+        fpath = fname
+
+    siteinfo = {}
+    execfile(fpath, siteinfo)
+    return siteinfo['config']
+
 def which(prog):
     '''
     Python equivalent of the unix which command, returns the absolute path of

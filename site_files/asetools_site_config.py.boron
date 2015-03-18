@@ -1,0 +1,18 @@
+
+'''
+site configuration file for the asetools package providing some necessary
+information about the batch system and the environment
+'''
+
+import os
+
+config = {
+    "batch"     : "pbs",
+    "home"      : os.getenv("HOME"),
+    "local_scr" : os.path.join(os.getenv("HOME"), "scratch"),
+    "lib_paths" : ['/share/apps/lib',
+                   '/share/apps/intel/composer_xe_2015.1.133/compiler/lib/intel64',
+                  '/share/apps/intel/composer_xe_2015.1.133/mkl/lib/intel64'], 
+    "python"    : "/home/lmentel/.virtualenvs/py2.7.9/bin/python",
+    "scratch"   : os.path.join("/scratch", os.getenv("USER")), 
+}

@@ -8,7 +8,7 @@ import numpy as np
 import os
 import socket
 import subprocess
-from asetools import get_template
+from asetools import get_template, get_config
 from argparse import ArgumentParser
 from string import Template
 
@@ -27,6 +27,11 @@ def main():
     parser.add_argument('-d', '--dryrun',
                         action='store_true',
                         help='Create sbatch script, but do not submit.')
+    parser.add_argument("-e",
+                        "--extrafiles",
+                        nargs="+",
+                        default=None,
+                        help="additional files that need to be copied to the node/scratch")
     parser.add_argument('-i', '--input',
                         default='input.py',
                         help='Name of input file(s) that you want copied to the compute node. Default=input.py')
@@ -44,6 +49,10 @@ def main():
                         dest='pno',
                         default='nn4683k',
                         help='NOTUR project number. Retrieve it with PROJECT command.')
+    parser.add_argument("-q",
+                        "--queue",
+                        default="default",
+                        help="destination queue, default=default")
     parser.add_argument("-s", "--scratch",
                         action="store_true",
                         help="use node scratch directory (/scratch/$USER), default=False")
@@ -54,29 +63,18 @@ def main():
     args = vars(parser.parse_args())
 
     args['workdir'] = os.getcwd()
-    args['home'] = os.getenv("HOME")
-    args['libs'] = ''
-    if socket.gethostname() == "boron.chem.umk.pl":
-        args['scratch'] = os.path.join('/scratch', os.getenv('USER'))
-        args['executable'] = "/home/lmentel/Downloads/quantum_espresso/espresso-dynpy-beef/bin/pw.x"
-        args['libs'] = ['/share/apps/lib', '/share/apps/intel/composer_xe_2015.1.133/compiler/lib/intel64',
-                        '/share/apps/intel/composer_xe_2015.1.133/mkl/lib/intel64']
-    args['local_scr'] = os.path.join(os.getenv('HOME'), 'scratch')
     args['jobname'] = os.path.splitext(args["input"])[0]
     args['outfile'] = args['jobname'] + ".out"
     args['script_name'] = "run." + args['jobname']
-    args['python'] = '/share/apps/bin/python2.7'
 
     submit(args)
 
-def submit(args, batch="PBS"):
+def submit(args):
     '''
     Submit a job to the batch system defined by the "batch" variable with the
     job details specified in the args object.
 
-    batch: (str)
-        name of the batch system:  "PBE", "SLURM", "LoadLeveller"
-    args: ArgumentParse obj
+    args: (dict)
         arguments specifying the job
     '''
 
@@ -84,12 +82,18 @@ def submit(args, batch="PBS"):
                   "slurm" : submit_slurm,
                  }
 
-    submitter = submitters.get(batch.lower(), None)
+    # get the site configuration from the $HOME/.asetools_site_config.py file
+    # and merge it into the args dictionary
+
+    site_config = get_config() 
+    args.update(site_config)
+
+    submitter = submitters.get(args['batch'].lower(), None)
     if submitter is not None:
         submitter(args)
     else:
         raise NotImplementedError("support for '{0:s}' is not implemented \
-                supported batch systems are: {1:s}".format(batch, ", ".join(submitters.keys())))
+                supported batch systems are: {1:s}".format(args['batch'], ", ".join(submitters.keys())))
 
 def submit_pbs(args):
     '''
@@ -103,8 +107,8 @@ def submit_pbs(args):
         else:
             script.write("#PBS -l nodes={0}:ppn={1}\n".format(args['nodes'], args['ppn']))
         script.write("#PBS -l walltime={0}\n\n".format(args['walltime']))
-        if args['libs'] is not None and args['libs'] != "":
-            script.write('export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:{0:<s}\n\n'.format(":".join(args['libs'])))
+        if args['lib_paths'] is not None and args['lib_paths'] != "":
+            script.write('export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:{0:<s}\n\n'.format(":".join(args['lib_paths'])))
         script.write("cd $PBS_O_WORKDIR\n")
         if args['scratch']:
             wrkdir = os.path.join(args['scratch'], args['jobname'])
