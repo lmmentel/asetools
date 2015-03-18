@@ -3,7 +3,7 @@
 from ase.io import read
 from ase.optimize import BFGS
 from espresso import espresso
-from mypython import set_init_magmoms,smart_cell
+from asetools import set_init_magmoms, smart_cell
 
 calc = espresso(pw=$pw,dw=$dw,
                 xc='$xc',

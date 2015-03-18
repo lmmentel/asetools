@@ -49,7 +49,7 @@ def main():
                         action="store_true",
                         default=False,
                         help='If true, run geometry optimization. Default: False (i.e single point).')
-    parser.add_argument('--native',
+    parser.add_argument('--nativeqe',
                         action="store_true",
                         default=False,
                         help='Runs internal espresso routines, instead of through the ase-espresso interface')
@@ -71,7 +71,7 @@ def main():
 
     # Import the template into a template object.
     nativemode = 'scf'
-    if args.native:
+    if args.nativeqe:
         tname = 'QEnative_template.py'
         if args.opt:
             nativemode = 'bfgs'
