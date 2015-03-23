@@ -45,8 +45,7 @@ def main():
     parser.add_argument('-p', '--ppn',
                         default='16',
                         help='Number of cores. Default=16 (one full node)')
-    parser.add_argument('--project',
-                        dest='pno',
+    parser.add_argument('--projectno',
                         default='nn4683k',
                         help='NOTUR project number. Retrieve it with PROJECT command.')
     parser.add_argument("-q",
@@ -85,7 +84,7 @@ def submit(args):
     # get the site configuration from the $HOME/.asetools_site_config.py file
     # and merge it into the args dictionary
 
-    site_config = get_config() 
+    site_config = get_config()
     args.update(site_config)
 
     submitter = submitters.get(args['batch'].lower(), None)
@@ -112,6 +111,9 @@ def submit_pbs(args):
         if args['vars']:
             for name, value in args['vars']:
                 script.write("export {n}={v}\n".format(n=name, v=value))
+        script.write("#PBS -N {}\n".format(args["jobname"]))
+        if args["queue"] != "default":
+            script.write("#PBS -q {}\n".format(args["queue"]))
         script.write("cd $PBS_O_WORKDIR\n")
         if args['scratch']:
             wrkdir = os.path.join(args['scratch'], args['jobname'])
@@ -134,40 +136,66 @@ def submit_pbs(args):
     else:
         print("Created job script: {0}\nsubmitting to the queue".format(args['script_name']))
         sublog = open(args['jobname'] + ".sublog", 'w')
-        subprocess.Popen(["qsub", "-q", args['queue'], "-N", args['jobname'], args['script_name']], stdout=sublog, stderr=sublog)
+        subprocess.Popen(["qsub", args['script_name']], stdout=sublog, stderr=sublog)
         sublog.close()
 
 def submit_slurm(args):
+    '''
+    Write the run script for SLURM and submit it to the queue.
+    '''
 
-    #args[0] #should be time in format hh:mm:ss
-    if int(args.ncpu) >= 16:
-        ncpu_pernode = 16
+    modules = ['python2/2.7.9', 'espresso/5.0.3_beef'] #5.0.3 is 5.0.2 with openmpi1.8
+
+    if int(args["ppn"]) >= 16:
+        ncpu_per_node = 16
     else:
-        ncpu_pernode = int(args.ncpu)
-    nnodes = int(np.ceil(int(args.ncpu)/16.0)) #NB: means that for >16 CPUs, the script will automatically fully allocate all nodes, i.e. up to 15 more CPUs than requested
-    cpupars = '--nodes=%s --ntasks-per-node=%d' % (nnodes,ncpu_pernode)
+        ncpu_per_node = int(args["ppn"])
+    nnodes = int(np.ceil(int(args["ppn"])/16.0)) #NB: means that for >16 CPUs, the script will automatically fully allocate all nodes, i.e. up to 15 more CPUs than requested
 
-    modules = 'espresso/5.0.3_beef' #5.0.3 is 5.0.2 with openmpi1.8
-    commands = 'python ' + args.input
-    cleanup = ''
-    chkfiles = ''
-    if args.nativeQE:
-        #commands = 'cp *.inp $SCRATCH\ncd $SCRATCH\nmpirun pw.x < pw.inp > pw.out\npwlog2traj pw.out dyn.traj\nmpirun ph.x < ph.inp > ph.out\nmpirun dynmat.x < dynmat.inp > dynmat.out'
+    if args["nativeqe"]:
         commands = 'cp *.inp $SCRATCH\ncd $SCRATCH\nmpirun pw.x < pw.inp > pw.out\nmpirun ph.x < ph.inp > ph.out\nmpirun dynmat.x < dynmat.inp > dynmat.out'
         cleanup = 'cp -r pw.out dyn.traj ph.out dynmat.dat dynmat.out dynmat.mold calc.save _ph0/calc.phsave $SUBMITDIR'
+    else:
+        commands = "python " + args["input"]
+        cleanup = ""
 
-    template = Template(get_template('SLURMtemplate.py'))
+    with open(args['script_name'], 'w') as script:
+        script.write("#!/bin/bash\n")
+        script.write("#SBATCH --job-name={}\n".format(args["jobname"]))
+        script.write("#SBATCH --account={}\n".format(args["projectno"]))
+        script.write("#SBATCH --time={}\n".format(args["walltime"]))
+        script.write("#SBATCH --mem-per-cpu=3700M\n")
+        script.write("#SBATCH --nodes={0} --ntasks-per-node={1}\n".format(nnodes, ncpu_per_node))
+        script.write("#SBATCH --mail-type=FAIL\n")
+        script.write("\n\n# Set up job environment\n")
+        script.write("source {}\n".format(os.path.join(args["home"], ".bash_profile")))
+        script.write("source /cluster/bin/jobsetup\n")
+        script.write("module load {}\n".format(" ".join(modules)))
+        script.write("\n\n# Automatic copying of files and directories back to $SUBMITDIR\n")
+        if cleanup != "":
+            script.write("cleanup {}\n".format(cleanup))
+        script.write("\n\n# Do the work\n")
+        script.write("{}\n".format(commands))
+        script.write("\n# update the list of completed jobs\n")
+        script.write("echo `date +%F+%R`    $JOB_ID $SUBMITDIR >> $HOME/completed_jobs.dat\n")
 
-    with open('submscript','w') as finp:
-        finp.write(template.substitute(jobname=args.name, projectno=args.pno,
-                                       time=args[0], cpupars=cpupars, modules=modules,
-                                       SCRATCH='$SCRATCH', SUBMITDIR='$SUBMITDIR',
-                                       JOB_ID='$JOB_ID', HOME='$HOME',
-                                       chkfiles=chkfiles, commands=commands,
-                                       cleanupcommand=cleanup))
+    # submit the job to the queue if requested
+    if args['dryrun']:
+        print("Created job script: {0}\n NOT submitting to the queue\nbye...".format(args['script_name']))
+    else:
+        print("Created job script: {0}\nsubmitting to the queue".format(args['script_name']))
+        sublog = open(args['jobname'] + ".sublog", 'w')
+        subprocess.Popen(["sbatch", args['script_name']], stdout=sublog, stderr=sublog)
+        sublog.close()
 
-    if not args.dryrun:
-        os.system('mysbatch submscript')
+        with open(args['jobname'] + ".sublog", 'r') as slog:
+            cont = slog.read()
+
+        if "submitted batch job" in cont.lower():
+            pid = cont.split()[3]
+
+        with open(os.path.join(args['home'], "submitted_jobs.dat"), "a") as dat:
+            dat.write("{0:s} {1:s} {} ".format(pid, str(datetime.now()), str(args)))
 
 if __name__ == "__main__":
     main()
