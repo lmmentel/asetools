@@ -55,7 +55,6 @@ setup(
         'scripts/makejmolscript',
         'scripts/massCommand',
         'scripts/mkm-bsub',
-        'scripts/mysbatch',
         'scripts/parseErr',
         'scripts/piddir',
         'scripts/preparefreq_hydrocarbon',
