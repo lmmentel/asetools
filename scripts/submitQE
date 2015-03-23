@@ -177,7 +177,7 @@ def submit_slurm(args):
         script.write("\n\n# Do the work\n")
         script.write("{}\n".format(commands))
         script.write("\n# update the list of completed jobs\n")
-        script.write("echo `date +%F+%R`    $JOB_ID $SUBMITDIR >> $HOME/completed_jobs.dat\n")
+        script.write("echo `date +%F+%R`    $JOB_ID {0:s} $SUBMITDIR >> $HOME/completed_jobs.dat\n".format(args["jobname"]))
 
     # submit the job to the queue if requested
     if args['dryrun']:
