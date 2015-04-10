@@ -6,10 +6,13 @@ from __future__ import print_function
 
 import numpy as np
 import os
+import re
 import socket
 import subprocess
+import operator
 from asetools import get_template, get_config
 from argparse import ArgumentParser
+from datetime import datetime
 from string import Template
 
 def main():
@@ -159,6 +162,10 @@ def submit_slurm(args):
         commands = "python " + args["input"]
         cleanup = ""
 
+    skipped = ['batch', 'extrafiles', 'home', 'HOST', 'local_scr', 'vars']
+    strargs = str([(k, v) for k,v in sorted(args.items(),
+                        key=operator.itemgetter(0)) if not k in skipped])
+
     with open(args['script_name'], 'w') as script:
         script.write("#!/bin/bash\n")
         script.write("#SBATCH --job-name={}\n".format(args["jobname"]))
@@ -177,25 +184,28 @@ def submit_slurm(args):
         script.write("\n\n# Do the work\n")
         script.write("{}\n".format(commands))
         script.write("\n# update the list of completed jobs\n")
-        script.write("echo `date +%F+%R`    $JOB_ID {0:s} $SUBMITDIR >> $HOME/completed_jobs.dat\n".format(args["jobname"]))
+        script.write("echo `date +%F+%R`    $JOB_ID {0:s} $SUBMITDIR {1:s} >> $HOME/completed_jobs.dat\n".format(args["jobname"], strargs))
 
     # submit the job to the queue if requested
     if args['dryrun']:
         print("Created job script: {0}\n NOT submitting to the queue\nbye...".format(args['script_name']))
     else:
         print("Created job script: {0}\nsubmitting to the queue".format(args['script_name']))
-        sublog = open(args['jobname'] + ".sublog", 'w')
-        subprocess.Popen(["sbatch", args['script_name']], stdout=sublog, stderr=sublog)
-        sublog.close()
+        output = subprocess.check_output(["sbatch", args['script_name']])
 
-        with open(args['jobname'] + ".sublog", 'r') as slog:
-            cont = slog.read()
+        patt = re.compile(r"Submitted batch job\s*(\d+)")
+        m = patt.search(output)
+        if m:
+            pid = str(m.group(1))
+            with open(os.path.join(args['home'], "submitted_jobs.dat"), "a") as dat:
+                dat.write("{0:s} {1:s} {2:s} ".format(pid,
+                    str(datetime.now()), strargs))
+        else:
+            pid = None
 
-        if "submitted batch job" in cont.lower():
-            pid = cont.split()[3]
-
-        with open(os.path.join(args['home'], "submitted_jobs.dat"), "a") as dat:
-            dat.write("{0:s} {1:s} {} ".format(pid, str(datetime.now()), str(args)))
+        # save the sublog file for reference
+        with open(args['jobname'] + ".sublog", 'w') as slog:
+            slog.write(output)
 
 if __name__ == "__main__":
     main()
