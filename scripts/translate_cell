@@ -2,19 +2,42 @@
 A script that demonstrates how to use the ase.utils.geometry.cut method to  
 transform a default unit cell to a new one.
 '''
+import argparse
+import os
 
 from ase import io
 from ase.utils.geometry import cut
 
-from argparse import ArgumentParser
+
+def coords(s):
+    '''return a tuple from a string with three numbers'''
+    try:
+        x, y, z = map(float, s.split(','))
+        return x, y, z
+    except:
+        raise argparse.ArgumentTypeError("Coordinates must be x,y,z")
 
 if __name__ == "__main__":
 
-    parser = ArgumentParser()
+    parser = argparse.ArgumentParser()
     parser.add_argument("input", help="input file")
+    parser.add_argument("-o", "--output", help="output file")
+    parser.add_argument("-x", default=1,
+                        help="the scaling factor for the a-vector (from origo)")
+    parser.add_argument("-y", default=1,
+                        help="the scaling factor for the b-vector (from origo)")
+    parser.add_argument("-z", default=1,
+                        help="the scaling factor for the c-vector (from origo)")
+    parser.add_argument("--origo", default=(0.5, 0.5, 0.5), type=coords,
+                        help="Position of origo of the new cell in scaled coordinates")
     args = parser.parse_args()
 
+    base, ext = os.path.splitext(args.input)
+
+    if not args.output:
+        args.output = base + "_translated" + ext
+
     mol = io.read(args.input)
-    new_mol = cut(mol, a=(1, 0, 0), b=(0, 1, 0), c=None, origo=(0.5, 0.5, 0.5))
-    io.write("translated.traj", new_mol)
+    new_mol = cut(mol, a=(args.x, 0, 0), b=(0, args.y, 0), c=(0, 0, args.z), origo=args.origo)
+    io.write(args.output, new_mol)
 
