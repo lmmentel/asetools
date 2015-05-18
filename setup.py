@@ -102,6 +102,7 @@ setup(
         'scripts/sub_runRPBE',
         'scripts/sub_zeoliteonly',
         'scripts/submitQE',
+        'scripts/translate_cell',
         'scripts/usage',
         'scripts/writecif',
         'scripts/writeqespec',
