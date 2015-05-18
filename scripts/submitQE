@@ -20,13 +20,15 @@ def main():
     parser = ArgumentParser(usage='Script used to generate submission script for batch systems')
     group = parser.add_mutually_exclusive_group()
 
+    parser.add_argument('input',
+                        default='input.py',
+                        help='Name of input file(s) that you want copied to the compute node. Default=input.py')
     group.add_argument("-H", "--HOST",
                        default="",
                        help="destination hostname, default=''")
     group.add_argument("-n", "--nodes",
                        default="1",
                        help="number of nodes, default=1")
-
     parser.add_argument('-d', '--dryrun',
                         action='store_true',
                         help='Create sbatch script, but do not submit.')
@@ -35,12 +37,6 @@ def main():
                         nargs="+",
                         default=None,
                         help="additional files that need to be copied to the node/scratch")
-    parser.add_argument('-i', '--input',
-                        default='input.py',
-                        help='Name of input file(s) that you want copied to the compute node. Default=input.py')
-    parser.add_argument('--name',
-                        default = os.getcwd()[-8:],
-                        help='Name of the job. Default: extracted from submission path')
     parser.add_argument('--nativeqe',
                         action="store_true",
                         default=False,
@@ -163,8 +159,8 @@ def submit_slurm(args):
         cleanup = ""
 
     skipped = ['batch', 'extrafiles', 'home', 'HOST', 'local_scr', 'vars']
-    strargs = str([(k, v) for k,v in sorted(args.items(),
-                        key=operator.itemgetter(0)) if not k in skipped])
+    strargs = "".join(["{0:>15s}".format(str(args[k])) for k in sorted(args.keys())
+                      if not k in skipped])
 
     with open(args['script_name'], 'w') as script:
         script.write("#!/bin/bash\n")
@@ -184,7 +180,9 @@ def submit_slurm(args):
         script.write("\n\n# Do the work\n")
         script.write("{}\n".format(commands))
         script.write("\n# update the list of completed jobs\n")
-        script.write("echo `date +%F+%R`    $JOB_ID {0:s} $SUBMITDIR {1:s} >> $HOME/completed_jobs.dat\n".format(args["jobname"], strargs))
+        epilogue1 = 'printf "%16s %12d %20s %s\\n" `date +%F+%R` $JOB_ID $SUBMITDIR'
+        epilogue2 = ' "{1:s}" >> $HOME/completed_jobs.dat\n'.format(args['jobname'], strargs)
+        script.write(epilogue1 + epilogue2)
 
     # submit the job to the queue if requested
     if args['dryrun']:
@@ -198,7 +196,7 @@ def submit_slurm(args):
         if m:
             pid = str(m.group(1))
             with open(os.path.join(args['home'], "submitted_jobs.dat"), "a") as dat:
-                dat.write("{0:s} {1:s} {2:s} ".format(pid,
+                dat.write('{0:s} {1:s} "{2:s}"'.format(pid,
                     str(datetime.now()), strargs))
         else:
             pid = None
@@ -206,6 +204,12 @@ def submit_slurm(args):
         # save the sublog file for reference
         with open(args['jobname'] + ".sublog", 'w') as slog:
             slog.write(output)
+
+def header(args, skipped):
+
+    out = "{0:^16s} {1:^12s} {2:^20s}".format("Date", "Job ID", "Submit dir")
+    out += "".join(["{0:>15s}".format(k) for k in sorted(args.keys()) if not k in skipped])
+    return out
 
 if __name__ == "__main__":
     main()
