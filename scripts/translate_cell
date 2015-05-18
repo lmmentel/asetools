@@ -1,0 +1,20 @@
+'''
+A script that demonstrates how to use the ase.utils.geometry.cut method to  
+transform a default unit cell to a new one.
+'''
+
+from ase import io
+from ase.utils.geometry import cut
+
+from argparse import ArgumentParser
+
+if __name__ == "__main__":
+
+    parser = ArgumentParser()
+    parser.add_argument("input", help="input file")
+    args = parser.parse_args()
+
+    mol = io.read(args.input)
+    new_mol = cut(mol, a=(1, 0, 0), b=(0, 1, 0), c=None, origo=(0.5, 0.5, 0.5))
+    io.write("translated.traj", new_mol)
+
