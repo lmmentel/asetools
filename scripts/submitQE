@@ -196,8 +196,8 @@ def submit_slurm(args):
         if m:
             pid = str(m.group(1))
             with open(os.path.join(args['home'], "submitted_jobs.dat"), "a") as dat:
-                dat.write('{0:s} {1:s} "{2:s}"'.format(pid,
-                    str(datetime.now()), strargs))
+                dat.write('{0:20s} {1:>12s} "{2:s}"'.format(
+                    str(datetime.now().strftime("%Y-%m-%d+%H:%M:%S")), pid, strargs))
         else:
             pid = None
 
