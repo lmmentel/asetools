@@ -22,7 +22,6 @@ setup(
         'scripts/displayDOS',
         'scripts/displayDOS_gpaw',
         'scripts/dynmatsimple',
-        'scripts/espresso.pyc',
         'scripts/espresso_old.py',
         'scripts/esub-gen',
         'scripts/esub-suncat',
