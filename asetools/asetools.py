@@ -17,7 +17,7 @@ def merge_two_dicts(x, y):
 
 def get_config(fname=None):
     '''
-    Retrieve the information on the batch submission and environment from 
+    Retrieve the information on the batch submission and environment from
     the asetools_site_config.py'''
 
     if fname is None:
@@ -34,6 +34,14 @@ def which(prog):
     '''
     Python equivalent of the unix which command, returns the absolute path of
     the "prog" if it is found on the system PATH.
+
+    Args:
+      prog : str
+        Program name (execuatable)
+
+    Returns:
+      fprog : str
+        Path to the executable
     '''
 
     if sys.platform == "win32" and os.path.splitext(prog)[1].lower() != '.exe':
@@ -43,10 +51,30 @@ def which(prog):
         if os.path.exists(fprog) and os.access(fprog, os.X_OK):
             return fprog
 
+def list_templates():
+    '''Return a list of all the available template file names'''
+
+    path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "templates")
+    return os.listdir(path)
+
 def get_template(tname=None):
     '''
-    Return the contents of the tempalte file "tname" if it can be fousn in the
+    Return the contents of the template file *tname* if it can be found in the
     templates path, otherwise raise an error.
+
+    Args:
+      tname : str
+        Name of the template file
+
+    Returns:
+      contents : str
+        Contents of the file *tname* as `str`
+
+    Raises:
+      ValueError:
+        when `tname` is `None`
+      IOerror:
+        when template file cannot be found
     '''
 
     path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "templates")
