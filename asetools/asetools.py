@@ -161,6 +161,67 @@ def substitute_Atom(atoms, a1, a2):
         atoms[i].symbol = a2
     return
 
+def attach_atom(atoms, ind, symbol='H', theta=-45.0, r=1.5):
+    '''
+    Attach an atom to the existing system
+
+    Args:
+      atoms : ase.Atoms
+        system to which thr atom will be attached
+      ind : int
+        index of the atom to which to attach the new atom
+      symbol : str
+        symbol of the new atom that will be attached
+      theta : float
+        angle at which the new will be positioned with respect to the selected atom
+      r : float
+        distance of the new atom with respect to the selected atom
+    '''
+
+    t = math.radians(theta)
+
+    x = atoms[ind].x + r * math.cos(t)
+    y = atoms[ind].y + r * math.sin(t)
+    z = atoms[ind].z
+
+    h = Atom(symbol=symbol, position=[x, y, z])
+
+    atoms.append(h)
+
+def attach_molecule(atoms, ind, molecule, theta=-45.0, r=2.5):
+    '''
+    Attach a molecule `molecule` to atom with index `ind` and return
+    the metged system as ase.Atoms instance
+
+    Args:
+      atoms : ase.Atoms
+        System to which the molecule should be attached
+      ind : int
+        Index of the atom to which the molecule should be attached
+      molecule : ase.Atoms
+        A system (*molecule*) that is to be attached/added
+      theta : float
+        Angle at which the center of mass of the `molecule` will be placed
+      r : float
+        Distance along angle `theta` at which the center of mass of the `molecule` will be placed
+
+    Returns:
+      res : ase.Atoms
+        atoms instance with the new molecule attached
+
+    .. note::
+       It is assumed here that the `molecule` is properly rotated/aligned.
+    '''
+    mcm = molecule.get_center_of_mass()
+    molecule.translate(-mcm)
+
+    t = math.radians(theta)
+    cmx = atoms[ind].x + r * math.cos(t)
+    cmy = atoms[ind].y + r * math.sin(t)
+    cmz = atoms[ind].z
+    molecule.translate([cmx, cmy, cmz])
+    return atoms + molecule
+
 ###########################################################
 # From Andreas Moegelhoej 				  #
 #smart_cell returns the Atoms object centered		  #
