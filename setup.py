@@ -46,7 +46,6 @@ setup(
         'scripts/rerunBEEF_neb',
         'scripts/rerunBEEF_newunit',
         'scripts/rerunBEEF_single',
-        'scripts/rerunQE_single',
         'scripts/restartNEB',
         'scripts/restartcalc',
         'scripts/runBEEFopt',
