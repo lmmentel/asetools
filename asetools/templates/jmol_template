@@ -1,0 +1,37 @@
+# Jmol state version 12.0.41  
+# Attempt to make a standardized and quick way of making ball and stick structure images from .xyz and .cif files using jmol.
+
+function _setWindowState() {
+# height 737;
+# width 726;
+ color background white;
+ color unitcell black;
+}
+
+function _setFileState() {
+load auto /*file*/"file:INFILE";
+}
+
+function _setPerspectiveState() {
+ ROT1
+ ROT2
+ ROT3
+}
+
+function _setState() {
+  set refreshing false;
+  _setWindowState;
+  _setFileState;
+  _setPerspectiveState;
+#  set refreshing true;
+#  set antialiasDisplay false;
+#  set antialiasTranslucent true;
+  set antialiasImages true;
+}
+
+_setState;
+ set axes 6; #set the width of axes or lattice vectors
+ set unitcell 0;
+ font axes 35 sansserif bold;
+ axes off
+write IMAGE FORMAT 100 "OUTFILE"
