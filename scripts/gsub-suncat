@@ -1,3 +1,0 @@
-#!/bin/tcsh
-#Wrapper script for submission to suncat queues 
-gsub-gen suncat $argv

@@ -1,3 +1,0 @@
-#!/bin/tcsh
-#Wrapper script for submission on the lcls cluster
-gsub-gen lcls $1 psnehidle $2
