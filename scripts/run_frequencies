@@ -58,7 +58,7 @@ if options.nativeQE: #prepare for native espresso phonon calculation
   if options.kpts == '\'gamma\'':
 	#print 'Changing gamma point to (1,1,1)'
 	options.kpts = '(1,1,1)' #gamma point trick cannot be used in phonon calculation
-  pwcalc = 'QEinitcalc_template.py'
+  pwcalc = 'QEnative_template.py'
   phcalc = 'ph_template.py'
   f = open(tpath + pwcalc,'r')
   templ_pwcalc = Template(f.read())

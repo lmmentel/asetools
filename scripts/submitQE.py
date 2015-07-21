@@ -15,7 +15,7 @@ from argparse import ArgumentParser
 from datetime import datetime
 from string import Template
 
-def main():
+def main(args):
 
     parser = ArgumentParser(usage='Script used to generate submission script for batch systems')
     group = parser.add_mutually_exclusive_group()
@@ -57,8 +57,11 @@ def main():
     parser.add_argument("-t", "--walltime",
                         default="120:00:00",
                         help="walltime in the format HH:MM:SS, default=120:00:00")
-
-    args = vars(parser.parse_args())
+   
+    if args: #arguments passed from other python code
+	args = vars(parser.parse_args(args))
+    else:  #run from command line
+	args = vars(parser.parse_args())
 
     args['workdir'] = os.getcwd()
     args['jobname'] = os.path.splitext(args["input"])[0]
@@ -162,7 +165,7 @@ def submit_slurm(args):
                       if not k in skipped])
 
     if os.path.isfile(args['script_name']):
-	print('Using existing job script: {0}.'.format(args['script_name']))
+	print('Using existing job script: {0}'.format(args['script_name']))
     else:
 	print('Creating job script: {0}'.format(args['script_name']))
     	with open(args['script_name'], 'w') as script:
@@ -214,4 +217,4 @@ def header(args, skipped):
     return out
 
 if __name__ == "__main__":
-    main()
+    main(None)

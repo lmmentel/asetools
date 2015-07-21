@@ -1,35 +1,41 @@
 #!/usr/bin/env python
 
-'''Script used to generate input file for a geometry optimization Quantum
-Espresso NB: should be run in the appropriate directory'''
+'''Script used to run a geometry optimization with Quantum Espresso NB: should be run in the appropriate directory'''
 
 from asetools import get_template
 from string import Template
 import os
-from argparse import ArgumentParser
+import argparse
 
 def main():
 
-    parser = ArgumentParser(usage='Script used to run an espresso calculation.')
+    parser = argparse.ArgumentParser(usage='Script used to run an espresso calculation.')
 
-    parser.add_argument('-i', '--input',
+    parser.add_argument('time',
+                        default='35:00:00',
+                        help='Requested wall time of submitted job.')
+
+    parser.add_argument('-i','--input',
                         default='startguess.traj',
                         help='Name and (relative) path of input file. Default=startguess.traj')
-    parser.add_argument('-n', '--ncpus',
-                        default='16',
-                        help='Requested number of cores. Default=16')
     parser.add_argument('--kpts',
                         default='gamma',
                         help='Definition of kpts spanning the Brillouin zone. Default=gamma (special qe trick compared to (1,1,1))')
     parser.add_argument('--sigma',
                         default='0.1',
                         help='Fermi smearing, sigma. Default=0.1')
+    parser.add_argument('--charge',
+			default=None,
+			help='Total charge of system. -1: one extra electron, 1: one electron missing, compared to neutral.')
+    parser.add_argument('--screening',
+			default=None,
+			help='Assume isolated charge, i.e. screen of long-range (electrostatic) interactions. Values: mt or esm -- see Espresso documentation for pw.x.')
     parser.add_argument('--xc',
                         default='BEEF-vdW',
                         help='Exchange Correlation functional. Default=BEEF-vdW')
     parser.add_argument('--grimme',
                         action="store_true",
-                        default=False,help='Turn on Grimme DFT-D2 dispersion correction.')
+                        default=False,help='Turn on Grimme DFT-D2 dispersion correction. Note: default s6 parameter is only good for PBE.')
     parser.add_argument('--pw',
                         default='500',
                         help='Planewave energy cutoff. Default value: 500 eV')
@@ -38,9 +44,9 @@ def main():
                         help='Planewave energy cutoff. Default value: 7000 eV')
     parser.add_argument('--magmoms',
                         default='',
-                        help='Provide a list of initial magnetic moments of the form \'(atomid,magmom),...\'. Default=\'\', i.e. non-spinpolarized calculation.')
+                        help='Provide a list of initial magnetic moments of the form \'({element},magmom),...\'. Default=\'\', i.e. non-spinpolarized calculation.')
     parser.add_argument('--fmax',
-                        default=0.03,help='Force threshold. Default=0.03 eV/AA.')
+                        default=0.01,help='Force threshold. Default=0.01 eV/AA.')
     parser.add_argument('--molecule',
                         action="store_true",
                         default=False,
@@ -52,56 +58,55 @@ def main():
     parser.add_argument('--nativeqe',
                         action="store_true",
                         default=False,
-                        help='Runs internal espresso routines, instead of through the ase-espresso interface')
-    parser.add_argument('--dryrun',
-                        action="store_false",
-                        default=True,
-                        help='Do not submit job.')
+                        help='Uses internal espresso routines, instead of through the ase-espresso interface')
+    parser.add_argument('exargs', nargs=argparse.REMAINDER) #to pass on to submitQE
+    
+    args = vars(parser.parse_args())
+    args['spinpol'] = False
+    if args['magmoms']: #initial magmoms are set; turn on spin-polarized calculation
+        args['spinpol'] = True
+	args['magmoms'] = args['magmoms'].replace('{','\'').replace('}','\'') #not very pretty hack to avoid using escaped quotes in the input
+    args['extralines'] = ''
+    if args['molecule']:
+        args['extralines'] = 'smart_cell(atoms,vac=7.5,h=0.01) #create cell with equal vacuum spacing of vac Aa in all directions. NB! grid spacing parameter h only matters for a real-space code!'
+        args['fmax'] = 0.01
+	args['sigma'] = 0.0
+	if args['charge']:
+          print 'Charged molecule. Turning on assume_isolated screening, using Martyna-Tuckerman correction.'
+          args['screening']='mt'
 
-    args = parser.parse_args()
-
-    spinpol = False
-    if args.magmoms: #initial magmoms are set; turn on spin-polarized calculation
-        spinpol = True
-    extralines = ''
-    if args.molecule:
-        extralines = 'smart_cell(atoms,vac=7.5,h=0.01) #create cell with equal vacuum spacing of vac Aa in all directions. NB! grid spacing parameter h only matters for a real-space code!'
-        args.fmax = 0.01
-    print args
-
-    # Import the template into a template object.
-    nativemode = 'scf'
-    if args.nativeqe:
+    #Choose native or ase input
+    if args['nativeqe']:
         tname = 'QEnative_template.py'
-        if args.opt:
-            nativemode = 'bfgs'
-    elif args.opt:
-        tname = 'QEopt_template.py'
+        if args['opt']:
+            args['nativemode'] = 'bfgs'
+	else:
+	    args['nativemode'] = 'scf'
     else:
-        tname = 'QEsingle_template.py'
-    if args.grimme:
-        vdw = '\'dft-d\''
-    else:
-        vdw = None
+        tname = 'QEase_template.py'
+	if args['opt']:
+	   args['steps'] = 1e3
+	else:
+	   args['steps'] = 1
 
     template = Template(get_template(tname))
 
     with open('input.py', 'w') as finp:
-        finp.write(template.substitute(vars(args)))
+        finp.write(template.substitute(args))
 
-#            xc=args.xc, vdw=vdw, pw=args.pw,
-#                                       dw=args.dw, kpts=args.kpts,
-#                                       sigma=args.sigma, spinpol=spinpol,
-#                                       mode=nativemode, idxs=args.magmomidxs,
-#                                       readpath=args['readpath'], fmax=args.fmax,
-#                                       extralines=extralines))
+    args['workdir'] = os.getcwd()
+    args['input'] = 'input'
+    args['jobname'] = args['input']
+    args['outfile'] = args['jobname'] + ".out"
+    args['script_name'] = "run." + args['jobname']
 
-    nativeflag = ' '
-    if args.native:
-        os.system('python input.py')
-        nativeflag = ' --native '
-    if args.submit:
-        os.system('submitQE -n '+args.n_cpu+nativeflag+args[0])
+    #create job script and submit, using additional arguments
+    import submitQE
+    exargs = args['exargs']
+    if args['nativeqe']:
+	os.system('python input.py') #generates native espresso input file
+	exargs += ['--nativeqe']
+    submitQE.main(exargs+['-t',args['time'],'input.py'])
 
 if __name__ == "__main__":
     main()

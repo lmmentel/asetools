@@ -59,7 +59,7 @@ setup(
         'scripts/running',
         'scripts/sub_runRPBE',
         'scripts/sub_zeoliteonly',
-        'scripts/submitQE',
+	'scripts/submitQE.py',
         'scripts/translate_cell',
         'scripts/writecif',
         'scripts/writeqespec',
