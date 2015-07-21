@@ -6,4 +6,4 @@ mv dyn.traj restart.traj
 sed "s#\(read('\).*\(')\)#\1restart.traj\2#" input.py > input_temp
 mv input_temp input.py
 rm -fr qe[0-9]*_* slurm-*.out
-submitQE input.py 
+submitQE.py input.py 

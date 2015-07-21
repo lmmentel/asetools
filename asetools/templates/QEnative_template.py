@@ -12,7 +12,7 @@ calc = espresso(pw=$pw,dw=$dw,
                 convergence={'energy':1e-6}, #default
 		onlycreatepwinp = 'pw.inp',
 		spinpol=$spinpol,
-		mode='$mode',
+		mode='$nativemode',
 		fmax=$fmax
                 )
 

@@ -3,9 +3,11 @@ import numpy as np
 from ase.io import read
 from ase.vibrations import Vibrations
 from espresso.vibespresso import vibespresso
+from ase.thermochemistry import HarmonicThermo,rotationalinertia
 import os,pickle
 from ase.parallel import rank
-from asetools import set_init_magmoms
+from ase import units,Atoms
+from asetools import cm1_to_eV,set_init_magmoms
 
 atoms = read('$input')
 
@@ -25,8 +27,6 @@ calc = vibespresso(pw=$pw,dw=$dw,
                 convergence={'energy':1e-10},
                 spinpol=$spinpol,
                 mode='scf', #single-point energy calculation per displacement
-		charge=$charge,
-		isolated='$screening',
                 )
 
 atoms.set_calculator(calc)
@@ -41,3 +41,8 @@ if rank == 0:
 # Make trajectory files to visualize normal modes:
    for mode in range(len(indices)*3):
         vib.write_mode(mode)
+#Save a HarmonicThermo object
+   #vibenergies[0] = 12*cm1_to_eV
+   thermo = HarmonicThermo(vibenergies,elecenergy)
+   with open('HarmonicThermo.pckl','w') as file
+       pickle.dump(thermo,file)
