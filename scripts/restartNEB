@@ -1,10 +1,5 @@
 #!/bin/sh
-
 mkdir Restart
-cp input.py Restart/
-cp submscript Restart/
-cd Restart
-mkdir NEB
-cp ../neb*traj NEB
-cp ../initial.traj NEB
-cp ../final.traj NEB
+cp input.py run.input Restart/
+mkdir Restart/NEB
+cp neb*traj initial.traj final.traj Restart/NEB
