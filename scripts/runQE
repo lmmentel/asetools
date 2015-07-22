@@ -156,30 +156,28 @@ def main():
 	     args['steps'] = 1
 
     #write input file(s)
-    template = Template(get_template(tname))
-
-    with open('input.py', 'w') as finp:
-	finp.write(template.substitute(args))
-    if args['thermo'] and args['nativeqe']: #write additional files for native espresso freq. calc
-	phtemplate = Template(get_template('ph_template.py'))
-	with open('ph.inp','w') as finp:
-	   finp.write(phtemplate.substitute(args))
-	with open('dynmat.inp','w') as finp:
-	   finp.write('&input fildyn=\'dynmat.dat\' asr=\'%s\', /\n' % args['asr'])
-	
+    inputstr = Template(get_template(tname)).substitute(args)
+    with open('input.py','w') as finp:
+	finp.write(inputstr)
+    if args['nativeqe']: 
+	args['exargs'] += ['--nativeqe'] #to be passed on to submitQE
+	exec(inputstr) #generate native espresso input file for pw.x
+	if args['thermo']: #write additional files for ph.x and dynmat.x
+           phtemplate = Template(get_template('ph_template.py'))
+           with open('ph.inp','w') as finp:
+              finp.write(phtemplate.substitute(args))
+           with open('dynmat.inp','w') as finp:
+              finp.write('&input fildyn=\'dynmat.dat\' asr=\'%s\', /\n' % args['asr'])
+    
+    #submit job
+    import submitQE
     args['workdir'] = os.getcwd()
     args['input'] = 'input'
     args['jobname'] = args['input']
     args['outfile'] = args['jobname'] + ".out"
     args['script_name'] = "run." + args['jobname']
-
-    #create job script and submit, using additional arguments
-    import submitQE
-    exargs = args['exargs']
-    if args['nativeqe']:
-	os.system('python input.py') #generates native espresso input file
-	exargs += ['--nativeqe']
-    submitQE.main(exargs+['-t',args['time'],'input.py'])
+    args['exargs'] += ['-t',args['time'],'input.py']	
+    submitQE.main(args['exargs'])
 
 if __name__ == "__main__":
     main()
