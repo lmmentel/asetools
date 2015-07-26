@@ -1,6 +1,0 @@
-#hack to circumvent problems with environments of different python versions
-module unload $PYTHONVER
-module load python2
-pwlog2trajectory $@
-module unload python2
-module load $PYTHONVER

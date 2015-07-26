@@ -15,7 +15,7 @@ from argparse import ArgumentParser
 from datetime import datetime
 from string import Template
 
-def main():
+def main(args):
 
     parser = ArgumentParser(usage='Script used to generate submission script for batch systems')
     group = parser.add_mutually_exclusive_group()
@@ -57,8 +57,11 @@ def main():
     parser.add_argument("-t", "--walltime",
                         default="120:00:00",
                         help="walltime in the format HH:MM:SS, default=120:00:00")
-
-    args = vars(parser.parse_args())
+   
+    if args: #arguments passed from other python code
+	args = vars(parser.parse_args(args))
+    else:  #run from command line
+	args = vars(parser.parse_args())
 
     args['workdir'] = os.getcwd()
     args['jobname'] = os.path.splitext(args["input"])[0]
@@ -142,8 +145,7 @@ def submit_slurm(args):
     '''
     Write the run script for SLURM and submit it to the queue.
     '''
-
-    modules = ['python2/2.7.9', 'espresso/5.0.3_beef'] #5.0.3 is 5.0.2 with openmpi1.8
+    modules = ['python2','espresso/5.0.3_beef'] #5.0.3 is 5.0.2 with openmpi1.8
 
     if int(args["ppn"]) >= 16:
         ncpu_per_node = 16
@@ -162,49 +164,51 @@ def submit_slurm(args):
     strargs = "".join(["{0:>15s}".format(str(args[k])) for k in sorted(args.keys())
                       if not k in skipped])
 
-    with open(args['script_name'], 'w') as script:
-        script.write("#!/bin/bash\n")
-        script.write("#SBATCH --job-name={}\n".format(args["jobname"]))
-        script.write("#SBATCH --account={}\n".format(args["projectno"]))
-        script.write("#SBATCH --time={}\n".format(args["walltime"]))
-        script.write("#SBATCH --mem-per-cpu=3700M\n")
-        script.write("#SBATCH --nodes={0} --ntasks-per-node={1}\n".format(nnodes, ncpu_per_node))
-        script.write("#SBATCH --mail-type=FAIL\n")
-        script.write("\n\n# Set up job environment\n")
-        script.write("source {}\n".format(os.path.join(args["home"], ".bash_profile")))
-        script.write("source /cluster/bin/jobsetup\n")
-        script.write("module load {}\n".format(" ".join(modules)))
-        script.write("\n\n# Automatic copying of files and directories back to $SUBMITDIR\n")
-        if cleanup != "":
-            script.write("cleanup {}\n".format(cleanup))
-        script.write("\n\n# Do the work\n")
-        script.write("{}\n".format(commands))
-        script.write("\n# update the list of completed jobs\n")
-        epilogue1 = 'printf "%16s %12d %20s %s\\n" `date +%F+%R` $JOB_ID $SUBMITDIR'
-        epilogue2 = ' "{1:s}" >> $HOME/completed_jobs.dat\n'.format(args['jobname'], strargs)
-        script.write(epilogue1 + epilogue2)
+    if os.path.isfile(args['script_name']):
+	print('Using existing job script: {0}'.format(args['script_name']))
+    else:
+	print('Creating job script: {0}'.format(args['script_name']))
+    	with open(args['script_name'], 'w') as script:
+        	script.write("#!/bin/bash\n")
+        	script.write("#SBATCH --job-name={}\n".format(args['workdir'][-8:]))
+        	script.write("#SBATCH --account={}\n".format(args["projectno"]))
+        	script.write("#SBATCH --time={}\n".format(args["walltime"]))
+        	script.write("#SBATCH --mem-per-cpu=3700M\n")
+        	script.write("#SBATCH --nodes={0} --ntasks-per-node={1}\n".format(nnodes, ncpu_per_node))
+        	script.write("#SBATCH --mail-type=FAIL\n")
+        	script.write("\n# Set up job environment\n")
+        	script.write("source {}\n".format(os.path.join(args["home"], ".bash_profile")))
+        	script.write("source /cluster/bin/jobsetup\n")
+        	script.write("module load {}\n".format(" ".join(modules)))
+        	script.write("\n# Automatic copying of files and directories back to $SUBMITDIR\n")
+        	if cleanup != "":
+            	   script.write("cleanup {}\n".format(cleanup))
+        	script.write("\n# Do the work\n")
+        	script.write("{}\n".format(commands))
+        	script.write("\n# update the list of completed jobs\n")
+        	script.write('echo `date +%F_%R` $JOB_ID $SUBMITDIR $JOB_NAME >> $HOME/completed_jobs.dat\n')
 
     # submit the job to the queue if requested
     if args['dryrun']:
-        print("Created job script: {0}\n NOT submitting to the queue\nbye...".format(args['script_name']))
+        print("NOT submitting to the queue\nbye...".format(args['script_name']))
     else:
-        print("Created job script: {0}\nsubmitting to the queue".format(args['script_name']))
         output = subprocess.check_output(["sbatch", args['script_name']])
-
+	
         patt = re.compile(r"Submitted batch job\s*(\d+)")
         m = patt.search(output)
         if m:
             pid = str(m.group(1))
             with open(os.path.join(args['home'], "submitted_jobs.dat"), "a") as dat:
-                dat.write('{0:20s} {1:>12s} {2:>20s} "{3:s}"\n'.format(
-                    str(datetime.now().strftime("%Y-%m-%d+%H:%M:%S")), pid,
-                    os.getcwd(), strargs))
+		dat.write('{0} {1:>12s} {2:>20s}\n'.format(
+                   pid, os.getcwd(), str(datetime.now().strftime("%Y-%m-%d+%H:%M:%S"))))
         else:
             pid = None
+	
+	print("Submitted batch job {0}".format(pid))
 
         # save the sublog file for reference
-        with open(args['jobname'] + ".sublog", 'w') as slog:
-            slog.write(output)
+        #with open(args['jobname'] + ".sublog", 'w') as slog:
+        #    slog.write(output)
 
 def header(args, skipped):
 
@@ -213,4 +217,4 @@ def header(args, skipped):
     return out
 
 if __name__ == "__main__":
-    main()
+    main(None)

@@ -1,9 +1,0 @@
-#!/bin/sh
-
-mkdir RPBE
-cp input.py RPBE
-cd RPBE
-sed -e "s#\(read('\).*\(')\)#\1../dyn.traj\2#" -e "s/BEEF-vdW/RPBE/" input.py > input.temp
-mv input.temp input.py
-gsub-suncat $1 $2
-cd ..

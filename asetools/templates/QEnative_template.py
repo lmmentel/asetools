@@ -6,16 +6,17 @@ from mypython import set_init_magmoms
 calc = espresso(pw=$pw,dw=$dw,
                 xc='$xc',
                 kpts = $kpts,
-		vdw_corr = $vdw,
+		london = $grimme,
                 sigma = $sigma, #Fermi smearing
+		isolated='$screening', #assuming the system to be isolated (a molecule or a cluster in a 3D supercell)
                 convergence={'energy':1e-6}, #default
 		onlycreatepwinp = 'pw.inp',
 		spinpol=$spinpol,
-		mode='$mode',
+		mode='$nativemode',
 		fmax=$fmax
                 )
 
-atoms = read('$readpath')
-set_init_magmoms(atoms,[$idxs])
+atoms = read('$input')
+set_init_magmoms(atoms,[$magmoms])
 $extralines
 calc.initialize(atoms)

@@ -3,21 +3,23 @@
 from ase.io import read
 from ase.optimize import BFGS
 from espresso import espresso
-from mypython import set_init_magmoms,smart_cell
+from asetools import set_init_magmoms,smart_cell
 
 calc = espresso(pw=$pw,dw=$dw,
                 xc='$xc',
-		vdw_corr=$vdw,
+		london=$grimme, #DFT-D2 dispersion correction
                 kpts = '$kpts',
-                sigma = $sigma, #Fermi smearing
+                sigma = $sigma, #Fermi smearing	
+		isolated='$screening', #assuming the system to be isolated (a molecule or a cluster in a 3D supercell)
                 convergence={'energy':1e-6}, #default
                 spinpol=$spinpol,
+		charge=$charge,
                 )
 
-atoms = read('$readpath')
-set_init_magmoms(atoms,[$idxs])
+atoms = read('$input')
+set_init_magmoms(atoms,[$magmoms])
 atoms.set_calculator(calc)
 $extralines
 
 qn = BFGS(atoms, logfile='qn.log',trajectory='dyn.traj')
-qn.run(fmax=$fmax)
+qn.run(fmax=$fmax,steps=$steps)

@@ -1,9 +1,0 @@
-#!/bin/sh
-
-mine=`bjobs -u all | grep RUN | grep brogaar | wc -l`
-user=`bjobs -u all | grep RUN | grep $1 | wc -l`
-total=`bjobs -u all | grep RUN | grep suncat | wc -l`
-#echo $mine
-echo 'My usage ' $mine'/'$total
-echo 'User:' $1 ' usage ' $user'/'$total
-# + '(' + str(int($mine)/int($total)*100)a + '%)/n'
