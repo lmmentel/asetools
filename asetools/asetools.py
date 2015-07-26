@@ -4,6 +4,8 @@
 import os
 import sys
 import numpy as np
+import math
+from ase import Atom
 
 Ry_to_eV = 13.605698066
 cm1_to_eV = 0.000123984257314843
