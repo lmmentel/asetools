@@ -1,0 +1,37 @@
+#!/usr/bin/env python
+#Script used to read the output of the native espressos vibrational frequnecies and write an easily readable file of frequencies.
+from sys import argv
+from optparse import OptionParser
+
+parser = OptionParser(usage='Script used to read only the frequencies (in cm^-1) from a dynmat.out file and write into a result file.')
+
+parser.add_option('-i','--inputname', dest='inname',default='dynmat.out',
+                  help='Prefix of input files. Default=dynmat.out')
+parser.add_option('-o','--outputname', dest='outname',default='frequencies.txt',
+                  help='Prefix of output files. Default=frequencies.txt.')
+parser.add_option('-n','--nonegative', dest='noneg',default=False,
+                  help='Should negative frequencies be deleted. Default=False.')
+parser.add_option('-c','--converttoev', dest='convert',default=False,
+                  help='Should frequencies be converted to energies. Default=False.')
+options,args = parser.parse_args()
+
+
+inFile = open(options.inname)
+outFile = open(options.outname, "w")
+counter = 1
+freq = []
+for line in inFile:
+    columns = line.split()
+    if line.startswith('  '):
+        if columns[0]==str(counter):
+            col = float(columns[1])
+            if options.convert:
+                   col*=1.23984193e-4
+            if options.noneg and col>0:
+                outFile.write(str(col)+'\n')
+                freq.append(col)
+            elif options.noneg is False:
+                outFile.write(str(col)+'\n')
+            counter+=1
+inFile.close()
+outFile.close()
