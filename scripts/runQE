@@ -22,7 +22,7 @@ def main():
                         default='startguess.traj',
                         help='Name and (relative) path of input file. Default=startguess.traj')
     parser.add_argument('--kpts',
-                        default='gamma',
+                        default='\'gamma\'',
                         help='Definition of kpts spanning the Brillouin zone. Default=gamma (special qe trick compared to (1,1,1))')
     parser.add_argument('--sigma',
                         default='0.1',
@@ -104,7 +104,7 @@ def main():
 	   args['sigma'] = 0.0
 	   if args['spinpol']:
 		args['spinpol'] = 'True, fix_magmom=True'
-	   if args['kpts'] == 'gamma':
+	   if args['kpts'] == '\'gamma\'':
                 args['kpts'] = '(1,1,1)' #gamma point trick cannot be used in phonon calculation
 	   #parameters for ph.x (phonon calculation)
 	   args['indices'] = args['indices'].translate(None,'[]').split(',')
@@ -123,9 +123,9 @@ def main():
 	else: #ase style
 	   calcdir = 'Frequencies/delta_'+args['delta']
 	   if args['thermo'] == 'IdealGas':
-     	      tname = 'vibrationIdealGas_template.py'
+     	      tname = 'QEase_vibIdeal_template.py'
   	   elif args['thermo'] == 'Harmonic':
-	      tname = 'vibrationHarmonic_template.py'
+	      tname = 'QEase_vibHarm_template.py'
   	   else:
      	      print('Thermo option {0} not supported. Try -h option for help.'.format(args['thermo']))
      	      exit()

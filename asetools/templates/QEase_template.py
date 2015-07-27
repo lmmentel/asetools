@@ -8,7 +8,7 @@ from asetools import set_init_magmoms,smart_cell
 calc = espresso(pw=$pw,dw=$dw,
                 xc='$xc',
 		london=$grimme, #DFT-D2 dispersion correction
-                kpts = '$kpts',
+                kpts = $kpts,
                 sigma = $sigma, #Fermi smearing	
 		isolated='$screening', #assuming the system to be isolated (a molecule or a cluster in a 3D supercell)
                 convergence={'energy':1e-6}, #default
