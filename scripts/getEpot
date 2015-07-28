@@ -4,11 +4,10 @@ from ase.io import read
 from sys import argv
 import numpy as np
 
-try:
+if len(argv) > 1:
   fnames = argv[1:]
-except:
+else:
   fnames = ['dyn.traj']
-
 
 for fname in fnames:
   a = read(fname)
