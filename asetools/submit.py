@@ -15,7 +15,7 @@ from argparse import ArgumentParser
 from datetime import datetime
 from string import Template
 
-def main(args):
+def main(args=None):
 
     parser = ArgumentParser(usage='Script used to generate submission script for batch systems')
     group = parser.add_mutually_exclusive_group()
