@@ -195,7 +195,7 @@ def attach_atom(atoms, ind, symbol='H', theta=-45.0, r=1.5):
 
     h = Atom(symbol=symbol, position=[x, y, z])
 
-    atoms.append(h)
+    return atoms + h
 
 def attach_molecule(atoms, ind, molecule, theta=-45.0, r=2.5):
     '''
