@@ -2,10 +2,10 @@
 #Script used to search the Atoms object in argv[1] for the Atom symbols in argv[2] and print the indices
 from ase.io import read
 from sys import argv
-from mypython import get_selected_atom_indices
+from asetools import get_indices_by_symbols
 
 readname = argv[1]
 symbols = argv[2]
 
 atoms = read(readname)
-print get_selected_atom_indices(atoms,symbols)
+print get_indices_by_symbols(atoms,symbols)

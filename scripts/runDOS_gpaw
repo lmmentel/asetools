@@ -6,20 +6,20 @@ from sys import argv,exit
 from commands import getoutput
 from ase import Atoms
 from ase.io import read,write
-from mypython import mymkdir,get_selected_atom_indices
+from asetools import mymkdir,get_indices_by_symbols
 
 mymkdir('DOS')
 angulars = list(argv[1].translate(None,',[]'))
 
 # Import the template into a template object.
-tdir = '/a/suncatfs1/u1/brogaard/bin/mypython/'
+tdir = '/a/suncatfs1/u1/brogaard/bin/asetools/'
 f = open(tdir+'dos_template_gpaw.py','r')
 template = Template(f.read())
 f.close()
 del f
 
 atoms = read('dyn.traj')
-atomlist = get_selected_atom_indices(atoms,argv[2])
+atomlist = get_indices_by_symbols(atoms,argv[2])
 
 os.chdir('DOS')
 f = open('dos.py','w')

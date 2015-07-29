@@ -3,8 +3,8 @@ from ase.io import write,read
 from gpaw import GPAW
 import numpy as np
 from sys import path
-path.insert(0,'/nfs/slac/g/suncatfs/brogaard/bin/mypython')
-from mypython import smart_cell
+path.insert(0,'/nfs/slac/g/suncatfs/brogaard/bin/asetools')
+from asetools import smart_cell
 from gpaw.poisson import PoissonSolver
 from gpaw.dipole_correction import DipoleCorrection
 

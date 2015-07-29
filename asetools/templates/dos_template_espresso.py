@@ -3,7 +3,7 @@ import numpy as np
 from ase.io import read
 import pickle,os
 from espresso import espresso
-from mypython import set_init_magmoms
+from asetools import set_init_magmoms
 
 atoms = read('$readpath')
 

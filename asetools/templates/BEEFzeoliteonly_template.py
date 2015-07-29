@@ -3,12 +3,12 @@ from ase.io import write,read,PickleTrajectory
 from ase.optimize import BFGS,FIRE
 import numpy as np
 from gpaw import GPAW,FermiDirac,Mixer
-from mypython import get_selected_atom_indices
+from asetools import get_indices_by_symbols
 
 atoms = read('$readpath')
 
 #Delete the hydrocarbon molecule
-indices = get_selected_atom_indices(atoms,['C','H'])
+indices = get_indices_by_symbols(atoms,['C','H'])
 for i in indices:
   del atoms[i]
 

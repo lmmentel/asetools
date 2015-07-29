@@ -5,7 +5,7 @@ from string import Template
 from ase.io import read,write
 import os
 from optparse import OptionParser
-from mypython import mymkdir
+from asetools import mymkdir
 
 parser = OptionParser(usage='Script used to run DPE calculation.')
 
@@ -25,7 +25,7 @@ else:
 	dw = options.dw
 print options
 
-f = open('/a/suncatfs1/u1/brogaard/bin/mypython/QE_DPE_template.py','r')
+f = open('/a/suncatfs1/u1/brogaard/bin/asetools/QE_DPE_template.py','r')
 template = Template(f.read())
 f.close()
 del f

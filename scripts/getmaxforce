@@ -4,7 +4,7 @@
 import os,numpy
 from sys import argv
 from ase.io import read
-from mypython import get_maxforce
+from asetools import get_maxforce
 
 try:
   name = argv[1]

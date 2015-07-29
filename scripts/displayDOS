@@ -4,7 +4,7 @@ from string import Template
 import os,errno,pickle
 from matplotlib import pyplot
 from sys import argv,exit
-from mypython import get_resov_dos_espresso
+from asetools import get_resov_dos_espresso
 
 angulars = list(argv[1].translate(None,',[]'))
 atomnolist = [int(a) for a in argv[2:]]

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import matplotlib.pyplot as plt
 import numpy as np
-from mypython import cm1_to_eV,readcols
+from asetools import cm1_to_eV,readcols
 from sys import argv
 import pickle
 from optparse import OptionParser

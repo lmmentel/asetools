@@ -4,7 +4,7 @@
 from string import Template
 import os
 from sys import argv
-from mypython import mymkdir
+from asetools import mymkdir
 
 try: 
     filename = argv[1]
@@ -29,7 +29,7 @@ mymkdir('gencube')
 os.chdir('gencube')
 
 # Import the template into a template object.
-f = open('/a/suncatfs1/u1/brogaard/bin/mypython/gencube_template.py','r')
+f = open('/a/suncatfs1/u1/brogaard/bin/asetools/gencube_template.py','r')
 template = Template(f.read())
 f.close()
 del f

@@ -6,7 +6,7 @@ from ase.io import read
 from ase.data.molecules import molecule
 from ase.visualize import view
 import os
-from mypython import mymkdir
+from asetools import mymkdir
 from string import Template
 
 tree = []

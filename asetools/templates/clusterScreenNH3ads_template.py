@@ -7,8 +7,8 @@ from ase.visualize import view
 from ase.optimize import BFGS
 from ase.constraints import FixAtoms
 from sys import path
-path.insert(0,'/nfs/slac/g/suncatfs/brogaard/bin/mypython')
-from mypython import smart_cell
+path.insert(0,'/nfs/slac/g/suncatfs/brogaard/bin/asetools')
+from asetools import smart_cell
 
 atoms = read('$NH4zeofile') #start guess for NH4ads complex
 atoms.set_pbc(False)

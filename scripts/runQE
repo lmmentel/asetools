@@ -2,7 +2,7 @@
 
 '''Script used to run a geometry optimization with Quantum Espresso NB: should be run in the appropriate directory'''
 
-from asetools import get_template,get_selected_atom_indices
+from asetools import get_template,get_indices_by_symbols
 from ase.io import read
 from string import Template
 import os
@@ -94,7 +94,7 @@ def main():
 	
     if args['thermo']: #frequency calculation
 	if args['hydrocarbon']:
-	   args['indices'] = str(get_selected_atom_indices(read(args['input']),['C','N','H']))
+	   args['indices'] = str(get_indices_by_symbols(read(args['input']),['C','N','H']))
 	args['input'] = '../../'+args['input'] #assumes script is run in same directory as input file. Will fail otherwise
 	if args['nativeqe']: #espresso style
 	   tname = 'QEnative_template.py'

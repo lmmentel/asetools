@@ -7,11 +7,11 @@ from sys import argv,exit
 from commands import getoutput
 from ase import Atoms
 from ase.io import read,write
-from mypython import get_selected_atom_indices,get_pdos_from_files
+from asetools import get_indices_by_symbols,get_pdos_from_files
 
 angulars = list(argv[1].translate(None,',[]'))
 atoms = read('gpaw.txt')
-atomnolist = [int(a) for a in argv[2:]] #get_selected_atom_indices(atoms,argv[2])
+atomnolist = [int(a) for a in argv[2:]] #get_indices_by_symbols(atoms,argv[2])
 
 pwd = os.getcwd()+'/'
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #Script used to extract IR freqs and intensities from a molden file and save it in a twocolumn format to be easily read
 import numpy as np
-from mypython import cm1_to_eV,readcols,foldFreqInt
+from asetools import cm1_to_eV,readcols,foldFreqInt
 from sys import argv
 import pickle,os
 

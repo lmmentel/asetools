@@ -49,7 +49,7 @@ os.mkdir('BEEF')
 os.chdir('BEEF')
 
 # Import the template into a template object.
-f = open('/a/suncatfs1/u1/brogaard/bin/mypython/ZSM22_BEEFrerunneb_template.py','r')
+f = open('/a/suncatfs1/u1/brogaard/bin/asetools/ZSM22_BEEFrerunneb_template.py','r')
 template = Template(f.read())
 f.close()
 del f

@@ -27,7 +27,7 @@ print 'moldir:',moldir
 print 'zeopath:',zeopath
 
 # Import the template into a template object.
-tdir = basedir+'bin/mypython/'
+tdir = basedir+'bin/asetools/'
 f = open(tdir+'ZSM22_addmolecule_template.py','r')
 template = Template(f.read())
 f.close()

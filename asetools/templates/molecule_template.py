@@ -3,8 +3,8 @@ from ase.io import read
 from ase.optimize import BFGS
 from gpaw import GPAW
 from sys import path
-path.insert(0,'/nfs/slac/g/suncatfs/brogaard/bin/mypython')
-from mypython import smart_cell
+path.insert(0,'/nfs/slac/g/suncatfs/brogaard/bin/asetools')
+from asetools import smart_cell
 
 atoms = read('$readpath')
 atoms.set_pbc($pbc)

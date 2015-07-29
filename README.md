@@ -91,7 +91,7 @@ from ase.io import write,read
 from gpaw import GPAW
 import numpy as np
 from sys import path
-path.insert(0,'/nfs/slac/g/suncatfs/brogaard/bin/mypython')
+path.insert(0,'/nfs/slac/g/suncatfs/brogaard/bin/asetools')
 
 substrate = read('$spath')
 molecule = read('$mpath')

@@ -7,11 +7,11 @@ from sys import argv,exit
 from commands import getoutput
 from ase import Atoms
 from ase.io import read,write
-from mypython import get_selected_atom_indices,mymkdir
+from asetools import get_indices_by_symbols,mymkdir
 
 #Generate startguess, i.e. atoms set without hydrocarbon atoms
 atoms = read('dyn.traj')
-indices = get_selected_atom_indices(atoms,['C','H'])
+indices = get_indices_by_symbols(atoms,['C','H'])
 #NB NB, danger! If the hydrocarbon atoms do not have sequential indices this will fail
 del atoms[indices[0]:indices[-1]+1]
 
@@ -27,7 +27,7 @@ os.chdir('opt_zeoliteonly')
 write('startguess.traj',atoms)
 
 # Import the template into a template object.
-tdir = '/a/suncatfs1/u1/brogaard/bin/mypython/'
+tdir = '/a/suncatfs1/u1/brogaard/bin/asetools/'
 f = open(tdir+'QEopt_template.py','r')
 template = Template(f.read())
 f.close()

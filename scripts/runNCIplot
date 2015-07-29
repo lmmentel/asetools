@@ -14,7 +14,7 @@ parser.add_option('--prefix',dest='prefix',default='calc',help='Prefix for quant
 homedir = os.getenv("HOME")
 formatdict = {'cube':'6'}
 
-f = open(homedir+'/mypython/templates/pp_template.py')
+f = open(homedir+'/asetools/templates/pp_template.py')
 pptemp = Template(f.read())
 f.close()
 tempstring = 'mpirun pp.x < pp_%s.inp > pp_%s.out\n'

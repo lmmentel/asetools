@@ -2,7 +2,7 @@
 from ase.io import read,write
 from ase.optimize import BFGS
 from gpaw import GPAW
-from mypython import smart_cell
+from asetools import smart_cell
 import numpy as np
 from ase.visualize import view
 

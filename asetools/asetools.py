@@ -143,22 +143,29 @@ def move_atom(atoms, i, j):
     atoms.set_positions(newpos)
     return
 
-def get_selected_atom_indices(atoms, symbollist):
+def get_indices_by_symbols(atoms, symbollist):
     '''
     Function that given an Atoms object and a list of atom symbols returns a
     list of indices of the atoms from the list, that are present in the Atoms
     object. If no atoms are present, an empty list is returned.
     '''
 
-    mask = [a.symbol in symbollist for a in atoms]
-    return [i for i, x in enumerate(mask) if x == 1]
+    return [atom.index for atom in atoms if atom.symbol in symbollist]
+
+def remove_atom_by_symbols(atoms, symbollist):
+    '''
+    Given a list of atom symbols remove the corresponding atoms from the atoms
+    object.
+    '''
+
+    del atoms[[atom.index for atom in atoms if atom.symbol in symbollist]]
 
 def substitute_Atom(atoms, a1, a2):
     '''
     Funtion that given an Atoms object and two symbols a1 and a2, substitutes
     a1 for a2.
     '''
-    indices = get_selected_atom_indices(atoms, a1)
+    indices = get_indices_by_symbols(atoms, a1)
     for i in indices:
         atoms[i].symbol = a2
     return
