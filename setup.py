@@ -8,6 +8,11 @@ setup(
     author_email = "lmmentel@gmail.com",
     packages = ['asetools'],
     include_package_data = True,
+    entry_points = {
+        'console_scripts' : [
+            'submitQE = asetools.submit:main',
+        ]
+    },
     scripts = [
         'scripts/checkpointNEB',
         'scripts/checkpointQE',
@@ -50,7 +55,6 @@ setup(
         'scripts/runQE',
         'scripts/run_gencube',
         'scripts/sub_runRPBE',
-	'scripts/submitQE.py',
         'scripts/translate_cell',
         'scripts/writecif',
         'scripts/writeqespec',
