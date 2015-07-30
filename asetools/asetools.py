@@ -6,10 +6,20 @@ import sys
 import numpy as np
 import math
 from ase import Atom
+from scipy.constants import value
 
-Ry_to_eV = 13.605698066
-cm1_to_eV = 0.000123984257314843
+N_A = value('Avogadro constant')
+eV2J = value('electron volt-joule relationship')
+Ry_to_eV = value('Rydberg constant times hc in eV')
+cm1_to_eV = value('inverse meter-electron volt relationship')*100.0
 
+#Ry_to_eV = 13.605698066
+#cm1_to_eV = 0.000123984257314843
+
+def eV_to_kJmol(energy):
+    '''Convert the energy from eV to kJ/mol'''
+
+    return energy*eV2J*N_A/1000.0
 
 def merge_two_dicts(x, y):
     '''Given two dicts, merge them into a new dict as a shallow copy.'''
