@@ -59,9 +59,9 @@ def main(args=None):
                         help="walltime in the format HH:MM:SS, default=120:00:00")
    
     if args: #arguments passed from other python code
-	args = vars(parser.parse_args(args))
+	    args = vars(parser.parse_args(args))
     else:  #run from command line
-	args = vars(parser.parse_args())
+	    args = vars(parser.parse_args())
 
     args['workdir'] = os.getcwd()
     args['jobname'] = os.path.splitext(args["input"])[0]
