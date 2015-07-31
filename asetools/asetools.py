@@ -153,14 +153,33 @@ def move_atom(atoms, i, j):
     atoms.set_positions(newpos)
     return
 
-def get_indices_by_symbols(atoms, symbollist):
+def get_indices_by_symbols(atoms, symbollist, mode='include'):
     '''
     Function that given an Atoms object and a list of atom symbols returns a
     list of indices of the atoms from the list, that are present in the Atoms
     object. If no atoms are present, an empty list is returned.
+
+    Args:
+      atoms : ase.atoms.Atoms
+        System of atoms as ase Atoms instance
+      symbollist : list
+        List of atomic symbols to be included/excluded
+      mode : str
+        Return either a list of indices for atoms in the ``symbollist``
+        or indices of other other than those in ``symbollist``
+
+    Returns:
+      out : list
+        List of indices
     '''
 
-    return [atom.index for atom in atoms if atom.symbol in symbollist]
+    if mode == 'include':
+        return [atom.index for atom in atoms if atom.symbol in symbollist]
+    elif mode == 'exclude':
+        return [atom.index for atom in atoms if atom.symbol not in symbollist]
+    else:
+        raise ValueError('wrong mode: {}, allowed values we: "include" and "exclude"'.format(mode))
+
 
 def remove_atom_by_symbols(atoms, symbollist):
     '''
