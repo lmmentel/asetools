@@ -6,6 +6,7 @@ from __future__ import print_function
 
 import numpy as np
 import os
+import sys
 import re
 import socket
 import subprocess
@@ -15,9 +16,42 @@ from argparse import ArgumentParser
 from datetime import datetime
 from string import Template
 
+
+def query_yes_no(question, default="yes"):
+    """Ask a yes/no question via raw_input() and return their answer.
+
+    "question" is a string that is presented to the user.
+    "default" is the presumed answer if the user just hits <Enter>.
+        It must be "yes" (the default), "no" or None (meaning
+        an answer is required of the user).
+
+    The "answer" return value is one of "yes" or "no".
+    """
+    valid = {"yes":True,   "y":True,  "ye":True,
+             "no":False,     "n":False}
+    if default == None:
+        prompt = " [y/n] "
+    elif default == "yes":
+        prompt = " [Y/n] "
+    elif default == "no":
+        prompt = " [y/N] "
+    else:
+        raise ValueError("invalid default answer: '%s'" % default)
+
+    while True:
+        sys.stdout.write(question + prompt)
+        choice = raw_input().lower()
+        if default is not None and choice == '':
+            return valid[default]
+        elif choice in valid:
+            return valid[choice]
+        else:
+            sys.stdout.write("Please respond with 'yes' or 'no' "\
+                             "(or 'y' or 'n').\n")
+
 def main(args=None):
 
-    parser = ArgumentParser(usage='Script used to generate submission script for batch systems')
+    parser = ArgumentParser(usage='script used to generate submission script for batch systems')
     group = parser.add_mutually_exclusive_group()
 
     parser.add_argument('input',
@@ -27,6 +61,7 @@ def main(args=None):
                        default="",
                        help="destination hostname, default=''")
     group.add_argument("-n", "--nodes",
+                       type=int,
                        default="1",
                        help="number of nodes, default=1")
     parser.add_argument('-d', '--dryrun',
@@ -41,8 +76,13 @@ def main(args=None):
                         action="store_true",
                         default=False,
                         help='Runs internal espresso routines, instead of through the ase-espresso interface')
+    parser.add_argument('-m',
+                        '--mem-per-cpu',
+                        default='3700M',
+                        help='Memory per cpu, default=3700M')
     parser.add_argument('-p', '--ppn',
-                        default='16',
+                        type=int,
+                        default=16,
                         help='Number of cores. Default=16 (one full node)')
     parser.add_argument('--projectno',
                         default='nn4683k',
@@ -57,7 +97,7 @@ def main(args=None):
     parser.add_argument("-t", "--walltime",
                         default="120:00:00",
                         help="walltime in the format HH:MM:SS, default=120:00:00")
-   
+
     if args: #arguments passed from other python code
 	    args = vars(parser.parse_args(args))
     else:  #run from command line
@@ -141,74 +181,78 @@ def submit_pbs(args):
         subprocess.Popen(["qsub", args['script_name']], stdout=sublog, stderr=sublog)
         sublog.close()
 
+def write_slurm_script(args):
+    'Write a SLURM run script with variables from args dict'
+
+    with open(args['script_name'], 'w') as script:
+        script.write("#!/bin/bash\n")
+        script.write("#SBATCH --job-name={}\n".format(args['workdir'][-8:]))
+        script.write("#SBATCH --account={}\n".format(args["projectno"]))
+        script.write("#SBATCH --time={}\n".format(args["walltime"]))
+        script.write("#SBATCH --mem-per-cpu={}\n".format(args['mem_per_cpu']))
+        script.write("#SBATCH --nodes={0} --ntasks-per-node={1}\n".format(args['nodes'], args['ppn']))
+        script.write("#SBATCH --mail-type=FAIL\n")
+        script.write("\n# Set up job environment\n")
+        script.write("source {}\n".format(os.path.join(args["home"], ".bash_profile")))
+        script.write("source /cluster/bin/jobsetup\n")
+        script.write("module load {}\n".format(" ".join(args['modules'])))
+        script.write("\n# Automatic copying of files and directories back to $SUBMITDIR\n")
+        if args['cleanup'] != "":
+                script.write("cleanup {}\n".format(args['cleanup']))
+        script.write("\n# Do the work\n")
+        script.write("{}\n".format(args['commands']))
+        script.write("\n# update the list of completed jobs\n")
+        script.write('echo `date +%F_%R` $JOB_ID $SUBMITDIR $JOB_NAME >> $HOME/completed_jobs.dat\n')
+
 def submit_slurm(args):
     '''
     Write the run script for SLURM and submit it to the queue.
     '''
-    modules = ['python2','espresso/5.0.3_beef'] #5.0.3 is 5.0.2 with openmpi1.8
 
-    if int(args["ppn"]) >= 16:
-        ncpu_per_node = 16
-    else:
-        ncpu_per_node = int(args["ppn"])
-    nnodes = int(np.ceil(int(args["ppn"])/16.0)) #NB: means that for >16 CPUs, the script will automatically fully allocate all nodes, i.e. up to 15 more CPUs than requested
+    args['modules'] = ['python2','espresso/5.0.3_beef'] #5.0.3 is 5.0.2 with openmpi1.8
+
+    if int(args["ppn"]) > 16:
+        args['nodes'] = int(np.ceil(int(args["ppn"])/16.0)) #NB: means that for >16 CPUs, the script will automatically fully allocate all nodes, i.e. up to 15 more CPUs than requested
+        args['ppn'] = 16
 
     if args["nativeqe"]:
-        commands = 'cp *.inp $SCRATCH\ncd $SCRATCH\nmpirun pw.x < pw.inp > pw.out\nmpirun ph.x < ph.inp > ph.out\nmpirun dynmat.x < dynmat.inp > dynmat.out'
-        cleanup = 'cp -r pw.out dyn.traj ph.out dynmat.dat dynmat.out dynmat.mold calc.save _ph0/calc.phsave $SUBMITDIR'
+        args['commands'] = 'cp *.inp $SCRATCH\ncd $SCRATCH\nmpirun pw.x < pw.inp > pw.out\nmpirun ph.x < ph.inp > ph.out\nmpirun dynmat.x < dynmat.inp > dynmat.out'
+        args['cleanup'] = 'cp -r pw.out dyn.traj ph.out dynmat.dat dynmat.out dynmat.mold calc.save _ph0/calc.phsave $SUBMITDIR'
     else:
-        commands = "python " + args["input"]
-        cleanup = ""
+        args['commands'] = "python " + args["input"]
+        args['cleanup'] = ""
 
     skipped = ['batch', 'extrafiles', 'home', 'HOST', 'local_scr', 'vars']
     strargs = "".join(["{0:>15s}".format(str(args[k])) for k in sorted(args.keys())
                       if not k in skipped])
 
-    if os.path.isfile(args['script_name']):
-	print('Using existing job script: {0}'.format(args['script_name']))
+    if os.path.exists(args['script_name']):
+        message = 'Run script: {} exists, overwrite?'.format(args['script_name'])
+        if query_yes_no(message):
+            write_slurm_script(args)
+        else:
+	        print('Using existing job script: {0}, without changes'.format(args['script_name']))
     else:
-	print('Creating job script: {0}'.format(args['script_name']))
-    	with open(args['script_name'], 'w') as script:
-        	script.write("#!/bin/bash\n")
-        	script.write("#SBATCH --job-name={}\n".format(args['workdir'][-8:]))
-        	script.write("#SBATCH --account={}\n".format(args["projectno"]))
-        	script.write("#SBATCH --time={}\n".format(args["walltime"]))
-        	script.write("#SBATCH --mem-per-cpu=3700M\n")
-        	script.write("#SBATCH --nodes={0} --ntasks-per-node={1}\n".format(nnodes, ncpu_per_node))
-        	script.write("#SBATCH --mail-type=FAIL\n")
-        	script.write("\n# Set up job environment\n")
-        	script.write("source {}\n".format(os.path.join(args["home"], ".bash_profile")))
-        	script.write("source /cluster/bin/jobsetup\n")
-        	script.write("module load {}\n".format(" ".join(modules)))
-        	script.write("\n# Automatic copying of files and directories back to $SUBMITDIR\n")
-        	if cleanup != "":
-            	   script.write("cleanup {}\n".format(cleanup))
-        	script.write("\n# Do the work\n")
-        	script.write("{}\n".format(commands))
-        	script.write("\n# update the list of completed jobs\n")
-        	script.write('echo `date +%F_%R` $JOB_ID $SUBMITDIR $JOB_NAME >> $HOME/completed_jobs.dat\n')
+        print('Creating job script: {0}'.format(args['script_name']))
+        write_slurm_script(args)
 
     # submit the job to the queue if requested
     if args['dryrun']:
         print("NOT submitting to the queue\nbye...".format(args['script_name']))
     else:
         output = subprocess.check_output(["sbatch", args['script_name']])
-	
+
         patt = re.compile(r"Submitted batch job\s*(\d+)")
         m = patt.search(output)
         if m:
             pid = str(m.group(1))
             with open(os.path.join(args['home'], "submitted_jobs.dat"), "a") as dat:
-		dat.write('{0} {1:>12s} {2:>20s}\n'.format(
+		        dat.write('{0} {1:>12s} {2:>20s}\n'.format(
                    pid, os.getcwd(), str(datetime.now().strftime("%Y-%m-%d+%H:%M:%S"))))
         else:
             pid = None
-	
-	print("Submitted batch job {0}".format(pid))
 
-        # save the sublog file for reference
-        #with open(args['jobname'] + ".sublog", 'w') as slog:
-        #    slog.write(output)
+	print("Submitted batch job {0}".format(pid))
 
 def header(args, skipped):
 
