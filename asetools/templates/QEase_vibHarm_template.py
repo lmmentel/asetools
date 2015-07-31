@@ -44,5 +44,9 @@ if rank == 0:
 #Save a HarmonicThermo object
    #vibenergies[0] = 12*cm1_to_eV
    thermo = HarmonicThermo(vibenergies,elecenergy)
-   with open('HarmonicThermo.pckl','w') as file:
+   if len(indices) > 0:
+	thermofname = 'HarmonicThermo_partial.pckl'
+   else:
+	thermofname = 'HarmonicThermo.pckl'
+   with open(thermofname,'w') as file:
        pickle.dump(thermo,file)

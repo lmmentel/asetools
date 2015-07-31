@@ -2,7 +2,7 @@
 
 '''Script used to run a geometry optimization with Quantum Espresso NB: should be run in the appropriate directory'''
 
-from asetools import get_template,get_indices_by_symbols
+from asetools import get_template,get_indices_by_symbols,submit
 from ase.io import read
 from string import Template
 import os
@@ -170,14 +170,13 @@ def main():
               finp.write('&input fildyn=\'dynmat.dat\' asr=\'%s\', /\n' % args['asr'])
     
     #submit job
-    import submitQE
     args['workdir'] = os.getcwd()
     args['input'] = 'input'
     args['jobname'] = args['input']
     args['outfile'] = args['jobname'] + ".out"
     args['script_name'] = "run." + args['jobname']
     args['exargs'] += ['-t',args['time'],'input.py']	
-    submitQE.main(args['exargs'])
+    submit.main(args['exargs'])
 
 if __name__ == "__main__":
     main()
