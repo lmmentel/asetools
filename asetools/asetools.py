@@ -289,7 +289,20 @@ def smart_cell(s, vac=5.0, h=0.2):
     s.set_cell(c)
     s.center()
 
-def set_init_magmoms(atoms, indxs):
+def set_init_magmoms(atoms, magset):
+    '''sets initial magmoms for elements specified in magset. E.g. ('Ni',1.0) will set the initial magnetic moment of all Ni atoms to 1.0'''
+    indxs = []
+    for name,magmom in magset:
+        idxs = get_indices_by_symbols(atoms,name)
+        magvals = [magmom]*len(idxs)
+        indxs += zip(idxs,magvals)
+    if indxs == [] and magset != []:
+        print 'Error: no elements of specified type present. Exiting...'
+    else:
+        set_init_magmoms_from_indxs(atoms,indxs)
+
+def set_init_magmoms_from_indxs(atoms, indxs):
+    '''sets initial magmoms for atoms specified in indxs. E.g (1, 1.0) will set the initial magnetic moment of atoms[1] to 1.0'''
     magmoms = atoms.get_initial_magnetic_moments()
     new_magmoms = [0.0 for _ in magmoms]
     for (atom, magmom) in indxs:
