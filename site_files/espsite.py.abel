@@ -1,0 +1,44 @@
+# cluster-dependent definitions
+# espresso.py will make use of all "self" variables in config class
+# although not necessary for the installation at the suncat cluster,
+# we use a named pipe instead of stdio for sending coordinates back to pw.x
+# as an example how to set this up
+
+import os
+import subprocess as sp
+
+class config:
+    def __init__(self):
+        self.scratch = os.getenv('SCRATCH')
+        #if not os.path.exists(self.scratch):
+        #    self.scratch = '/tmp'
+        self.submitdir = os.getenv('SUBMITDIR')
+        self.batch = self.submitdir != None
+        #check for batch
+        if self.batch:
+            nnodes = int(os.getenv('SLURM_JOB_NUM_NODES'))
+
+            self.jobid = os.getenv('SLURM_JOB_ID')
+
+	    #NB: line below only gives usable result for jobs with the same number of tasks/node for all nodes
+            taskspernode = int(os.getenv('SLURM_TASKS_PER_NODE').split('(')[0])
+            nodeslist = sp.Popen('scontrol show hostnames $SLURM_JOB_NODELIST',
+                    shell=True, stdout=sp.PIPE).communicate()[0].split('\n')[:-1]
+            self.procs = [nodeslist[i//taskspernode] for i in range(len(nodeslist)*taskspernode)]
+            self.nprocs = len(self.procs)
+
+            self.perHostMpiExec = 'mpirun -host '+','.join(nodeslist)+' -np %d' % nnodes
+            self.perProcMpiExec = 'mpirun -wdir %s %s' #SLURM takes care of CPU allocation
+            self.perSpecProcMpiExec = 'mpirun -machinefile %s -np %d -wdir %s %s'
+
+    def do_perProcMpiExec(self, workdir, program):
+        return os.popen2(self.perProcMpiExec % (workdir, program))
+
+    def do_perProcMpiExec_outputonly(self, workdir, program):
+        return os.popen(self.perProcMpiExec % (workdir, program), 'r')
+
+    def runonly_perProcMpiExec(self, workdir, program):
+        os.system(self.perProcMpiExec % (workdir, program))
+
+    def do_perSpecProcMpiExec(self, machinefile, nproc, workdir, program):
+        return os.popen3(self.perSpecProcMpiExec % (machinefile, nproc, workdir, program))
