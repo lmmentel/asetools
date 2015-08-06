@@ -144,11 +144,13 @@ def move_atom(atoms, i, j):
     '''function that moves atom i to position j'''
 
     newsymbols = atoms.get_chemical_symbols()
-    newsymbols = np.delete(np.insert(newsymbols, j, atoms[i].symbol), i+1)
-
     pos = atoms.get_positions()
-    newpos = np.concatenate((pos[:j], [pos[i]], pos[j:i], pos[i+1:]))
-
+    if j < i:
+       newsymbols = np.delete(np.insert(newsymbols,j,atoms[i].symbol),i+1)
+       newpos = np.concatenate((pos[:j],[pos[i]],pos[j:i],pos[i+1:]))
+    else:
+       newsymbols = np.insert(np.delete(newsymbols,i),j,atoms[i].symbol)
+       newpos = np.concatenate((pos[:i],pos[i+1:j+1],[pos[i]],pos[j+1:]))
     atoms.set_chemical_symbols(newsymbols)
     atoms.set_positions(newpos)
     return
