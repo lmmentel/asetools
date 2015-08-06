@@ -191,7 +191,7 @@ def remove_atom_by_symbols(atoms, symbollist):
 
     del atoms[[atom.index for atom in atoms if atom.symbol in symbollist]]
 
-def substitute_Atom(atoms, a1, a2):
+def substitute_atom(atoms, a1, a2):
     '''
     Funtion that given an Atoms object and two symbols a1 and a2, substitutes
     a1 for a2.
@@ -262,16 +262,13 @@ def attach_molecule(atoms, ind, molecule, theta=-45.0, r=2.5):
     molecule.translate([cmx, cmy, cmz])
     return atoms + molecule
 
-###########################################################
-# From Andreas Moegelhoej 				  #
-#smart_cell returns the Atoms object centered		  #
-#in a cell with a size that matches a requirement	  #
-#for minimum vacuum and adapts the cell			  #
-#to yield exactly the grid spacing h.			  #
-#For single atoms the cell is non-cubic to break symmetry.#
-###########################################################
+def get_SiAlratio(atoms):
+  '''returns the Si/Al ratio for an ase.Atoms object'''
+  c = Counter(atoms.get_chemical_symbols())
+  return round(c['Si']/float(c['Al']),1)
 
 def smart_cell(s, vac=5.0, h=0.2):
+   '''returns the Atoms object centered in a cell with a size that ensures minimum 'vac' distance to the cell wall in all directions, and adapts the cell to yield exactly the grid spacing h (only relevant for real-space grid codes like gpaw). For single atoms the cell is non-cubic to break symmetry.'''
     s.center(vac)
     pos = s.get_positions()
     x = np.max(pos[:,0]) - np.min(pos[:,0])
