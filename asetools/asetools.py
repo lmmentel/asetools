@@ -7,6 +7,7 @@ import numpy as np
 import math
 from ase import Atom
 from scipy.constants import value
+from collections import Counter
 
 N_A = value('Avogadro constant')
 eV2J = value('electron volt-joule relationship')
@@ -268,7 +269,9 @@ def get_SiAlratio(atoms):
   return round(c['Si']/float(c['Al']),1)
 
 def smart_cell(s, vac=5.0, h=0.2):
-   '''returns the Atoms object centered in a cell with a size that ensures minimum 'vac' distance to the cell wall in all directions, and adapts the cell to yield exactly the grid spacing h (only relevant for real-space grid codes like gpaw). For single atoms the cell is non-cubic to break symmetry.'''
+    '''
+    returns the Atoms object centered in a cell with a size that ensures minimum vac distance to the cell wall in all directions, and adapts the cell to yield exactly the grid spacing h (only relevant for real-space grid codes like gpaw). For single atoms the cell is non-cubic to break symmetry.
+    '''
     s.center(vac)
     pos = s.get_positions()
     x = np.max(pos[:,0]) - np.min(pos[:,0])
