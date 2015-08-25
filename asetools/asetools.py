@@ -12,8 +12,9 @@ from collections import Counter
 N_A = value('Avogadro constant')
 eV2J = value('electron volt-joule relationship')
 Ry_to_eV = value('Rydberg constant times hc in eV')
-cm1_to_eV = value('inverse meter-electron volt relationship')*100.0
+m1_to_eV = value('inverse meter-electron volt relationship')
 
+# inverse cm to eV relationship is m1_to_eV*100.0
 #Ry_to_eV = 13.605698066
 #cm1_to_eV = 0.000123984257314843
 
