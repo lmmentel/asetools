@@ -19,7 +19,13 @@ m1_to_eV = value('inverse meter-electron volt relationship')
 #cm1_to_eV = 0.000123984257314843
 
 def eV_to_kJmol(energy):
-    '''Convert the energy from eV to kJ/mol'''
+    '''
+    Convert the energy from eV to kJ/mol
+    
+    Args:
+      energy : float
+        Energy in eV
+    '''
 
     return energy*eV2J*N_A/1000.0
 
