@@ -52,7 +52,18 @@ class System(Base):
     timestamp = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
     username = Column(String)
 
+    framework = Column(String) # framework code of the zeolite topology
     atoms = Column(PickleType)
+
+    cell_a = Column(Float)
+    cell_b = Column(Float)
+    cell_c = Column(Float)
+    cell_alpha = Column(Float)
+    cell_beta = Column(Float)
+    cell_gamma = Column(Float)
+    pbc = Column(Bool)
+
+    # results of the calculation
 
     energy = Column(Float)
     free_energy = Column(Float)
@@ -71,6 +82,30 @@ class System(Base):
     @hybrid_property
     def kwargs(self):
         return {kw.key:kw.value for kw in self._kwargs}
+
+class Calculator(Base):
+
+    __tablename__ = 'calculators'
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    version = Column(String)
+    attributes = relationship(CalculatorAttributes)
+
+class CalculatorAttributes(Base):
+
+    __tablename__ = 'calcattrs'
+
+    id = Column(Integer, primary_key=True)
+    attribute = column
+
+class ASETemplate(Base):
+
+    __tablename__ = 'asetemplates'
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    template = Column(String)
 
 def get_session(dbpath):
     '''Return the database session connection.'''
