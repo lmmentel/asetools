@@ -6,7 +6,7 @@ from setuptools import setup
 setup(
     author = "Lukasz Mentel",
     author_email = "lmmentel@gmail.com",
-    packages = ['asetools'],
+    packages = ['asetools', 'asetools/db'],
     include_package_data = True,
     entry_points = {
         'console_scripts' : [
