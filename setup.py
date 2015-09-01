@@ -6,7 +6,7 @@ from setuptools import setup
 setup(
     author = "Lukasz Mentel",
     author_email = "lmmentel@gmail.com",
-    packages = ['asetools'],
+    packages = ['asetools', 'asetools/db'],
     include_package_data = True,
     scripts = [
         'scripts/checkpointNEB',
@@ -41,7 +41,6 @@ setup(
         'scripts/rerunBEEF',
         'scripts/rerunBEEF_neb',
         'scripts/rerunBEEF_newunit',
-        'scripts/rerunBEEF_single',
         'scripts/restartNEB',
         'scripts/restartcalc',
         'scripts/runDOS',
@@ -51,7 +50,6 @@ setup(
         'scripts/runQE',
         'scripts/run_gencube',
         'scripts/sub_runRPBE',
-        'scripts/sub_zeoliteonly',
 	'scripts/submitQE.py',
         'scripts/translate_cell',
         'scripts/writecif',
