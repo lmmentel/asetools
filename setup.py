@@ -43,6 +43,7 @@ setup(
         'scripts/printPics',
         'scripts/printZSM22jmol',
         'scripts/printbcharges',
+        'scripts/pwlog2traj',
         'scripts/rerunBEEF',
         'scripts/rerunBEEF_neb',
         'scripts/rerunBEEF_newunit',
