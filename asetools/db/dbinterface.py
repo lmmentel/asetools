@@ -4,13 +4,14 @@
 
 from __future__ import unicode_literals, print_function, division
 
+import json
 import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import numpy as np
 from ase import Atoms
 from ase.lattice.spacegroup.cell import cellpar_to_cell, cell_to_cellpar
-from .model import Base, DBAtom, System, ASETemplate
+from .model import Base, DBAtom, System, ASETemplate, DBCalculator
 
 def get_session(dbpath, echo=False):
     '''Return the database session connection.'''
@@ -157,3 +158,69 @@ def atoms2system(atoms, username=None, name=None, framework=None, notes={}):
 
     return system
 
+def calculator2db(calc, attrs='basic', notes=None):
+    '''
+    A function to convert the calculator to DBCalculator instance to be stored
+    in the database.
+
+    Args:
+      calc : Calculator
+        Calculator instance to be stored in the database
+      attrs: str of list of str
+        Attributes of the calculator to be stored in the database. If the value
+        is a ``str`` it should be: ``all`` or ``basic`` where either all
+        attributes or just a small set are stored respectively. Also a list of
+        strings with attributes can be passed directly, then only the specified
+        ones will be stored.
+      notes : dict
+        A dictionary with the key value pairs to identify the calculator in the
+        database.
+
+    Returns:
+      out : DBCalculator
+        DBCalculator instance obtained from the ``calc``
+    '''
+
+    # check if the claculator has a get_name method or name attribute
+    name = hasattribute(calc, "name")
+    # check if the claculator has a get_version method or version attribute
+    version = hasattribute(calc, "version")
+
+    dbcalc = DBCalculator(name=name, version=version)
+
+    cases = {'all'   : sorted(calc.__dict__.keys()),
+             'basic' : ['calcmode', 'convergence', 'dw', 'kpts', 'pw', 'sigma',
+                        'spinpol', 'xc']}
+
+    if isinstance(attrs, str):
+        if attrs in ['all', 'basic']:
+            attrnames = cases[attrs]
+    elif isinstance(attrs, (list, tuple)):
+        attrnames = attrs
+    else:
+        raise ValueError('<attr> should be a <str> or <list>, got: {}'.\
+                         format(type(attrs)))
+
+    for a in attrnames:
+        if hasattr(calc, a):
+            value = getattr(calc, a, None)
+            if isinstance(value, (int, float, str, bool)) or value is None:
+                dbcalc[a] = value
+            else:
+                dbcalc[a] = json.dumps(value)
+
+    return dbcalc
+
+def hasattribute(obj, name, default=None):
+    '''Check if a given instance has a specified method or attribute'''
+
+    getter = "get_" + name
+
+    method = getattr(obj, getter, None)
+    if callable(method):
+        out = method()
+    elif hasattr(obj, name):
+        out = getattr(obj, name)
+    else:
+        out = default
+    return out

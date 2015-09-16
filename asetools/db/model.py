@@ -4,7 +4,8 @@
 
 from __future__ import unicode_literals, print_function, division
 
-from sqlalchemy import Column, LargeBinary, Integer, String, Float, PickleType, ForeignKey, DateTime, Unicode, UnicodeText, Boolean
+from sqlalchemy import (Column, LargeBinary, Integer, String, Float,
+        PickleType, ForeignKey, DateTime, Unicode, UnicodeText, Boolean)
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.ext.associationproxy import association_proxy
@@ -129,7 +130,7 @@ def on_new_class(mapper, cls_):
 Base = declarative_base()
 
 class DBCalculatorAttribute(PolymorphicVerticalProperty, Base):
-    '''class to handle storing key-value pairs for the system'''
+    '''class to handle storing key-value pairs for the calculator attributes'''
 
     __tablename__ = 'calculator_attributes'
 
@@ -151,7 +152,15 @@ class DBCalculator(ProxiedDictMixin, Base):
     id = Column(Integer, primary_key=True)
     name = Column(String)
     version = Column(String)
-    attributes = relationship(DBCalculatorAttribute)
+    attributes = relationship("DBCalculatorAttribute",
+                    collection_class=attribute_mapped_collection('key'))
+    _proxied = association_proxy("attributes", "value",
+                        creator=
+                        lambda key, value: DBCalculatorAttribute(key=key, value=value))
+
+    @classmethod
+    def with_attr(self, key, value):
+        return self.attributes.any(key=key, value=value)
 
 class ASETemplate(Base):
 
@@ -160,6 +169,7 @@ class ASETemplate(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String)
     template = Column(String)
+    ase_version = Column(String)
 
 class DBAtom(Base):
     '''Atom ORM object'''
@@ -255,13 +265,18 @@ class System(ProxiedDictMixin, Base):
     #dipole_z = Column(Float)
     #stress = Column(PickleType)
 
-    atoms = relationship(DBAtom)
-#    calculator = relationship(Calculator)
+    atoms = relationship('DBAtom')
 
-    notes = relationship("SystemNote",
+    calculator_id = Column(ForeignKey('calculators.id'))
+    calculator = relationship('DBCalculator')
+
+    template_id = Column(ForeignKey('asetemplates.id'))
+    template = relationship('ASETemplate')
+
+    notes = relationship('SystemNote',
                 collection_class=attribute_mapped_collection('key'))
 
-    _proxied = association_proxy("notes", "value",
+    _proxied = association_proxy('notes', 'value',
                         creator=
                         lambda key, value: SystemNote(key=key, value=value))
 
