@@ -158,7 +158,7 @@ def atoms2system(atoms, username=None, name=None, framework=None, notes={}):
 
     return system
 
-def calculator2db(calc, attrs='basic', notes=None):
+def calculator2db(calc, attrs='basic', description=None):
     '''
     A function to convert the calculator to DBCalculator instance to be stored
     in the database.
@@ -186,7 +186,7 @@ def calculator2db(calc, attrs='basic', notes=None):
     # check if the claculator has a get_version method or version attribute
     version = hasattribute(calc, "version")
 
-    dbcalc = DBCalculator(name=name, version=version)
+    dbcalc = DBCalculator(name=name, version=version, description=description)
 
     cases = {'all'   : sorted(calc.__dict__.keys()),
              'basic' : ['calcmode', 'convergence', 'dw', 'kpts', 'pw', 'sigma',

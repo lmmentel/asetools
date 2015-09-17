@@ -133,7 +133,7 @@ class DBCalculatorAttribute(PolymorphicVerticalProperty, Base):
 
     __tablename__ = 'calculator_attributes'
 
-    system_id = Column(ForeignKey('calculators.id'), primary_key=True)
+    calculator_id = Column(ForeignKey('calculators.id'), primary_key=True)
     key = Column(Unicode(64), primary_key=True)
     type = Column(Unicode(16))
 
@@ -152,6 +152,7 @@ class DBCalculator(ProxiedDictMixin, Base):
     name = Column(String)
     version = Column(String)
     description = Column(String)
+
     attributes = relationship("DBCalculatorAttribute",
                     collection_class=attribute_mapped_collection('key'))
     _proxied = association_proxy("attributes", "value",
@@ -167,7 +168,7 @@ class ASETemplateNote(PolymorphicVerticalProperty, Base):
 
     __tablename__ = 'asetemplate_notes'
 
-    system_id = Column(ForeignKey('asetemplates.id'), primary_key=True)
+    template_id = Column(ForeignKey('asetemplates.id'), primary_key=True)
     key = Column(Unicode(64), primary_key=True)
     type = Column(Unicode(16))
 
