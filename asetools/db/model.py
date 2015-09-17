@@ -162,7 +162,23 @@ class DBCalculator(ProxiedDictMixin, Base):
     def with_attr(self, key, value):
         return self.attributes.any(key=key, value=value)
 
-class ASETemplate(Base):
+class ASETemplateNote(PolymorphicVerticalProperty, Base):
+    '''class to handle storing key-value pairs for the calculator attributes'''
+
+    __tablename__ = 'asetemplate_notes'
+
+    system_id = Column(ForeignKey('asetemplates.id'), primary_key=True)
+    key = Column(Unicode(64), primary_key=True)
+    type = Column(Unicode(16))
+
+    # add information about storage for different types
+    # in the info dictionary of Columns
+    int_value = Column(Integer, info={'type': (int, 'integer')})
+    float_value = Column(Float, info={'type': (float, 'float')})
+    char_value = Column(UnicodeText, info={'type': (str, 'string')})
+    boolean_value = Column(Boolean, info={'type': (bool, 'boolean')})
+
+class ASETemplate(ProxiedDictMixin, Base):
 
     __tablename__ = 'asetemplates'
 
@@ -170,6 +186,17 @@ class ASETemplate(Base):
     name = Column(String)
     template = Column(String)
     ase_version = Column(String)
+
+    notes = relationship('ASETemplateNote',
+                collection_class=attribute_mapped_collection('key'))
+
+    _proxied = association_proxy('notes', 'value',
+                        creator=
+                        lambda key, value: ASETemplateNote(key=key, value=value))
+
+    @classmethod
+    def with_note(self, key, value):
+        return self.notes.any(key=key, value=value)
 
 class DBAtom(Base):
     '''Atom ORM object'''
