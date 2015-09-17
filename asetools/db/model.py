@@ -27,7 +27,6 @@ class ProxiedDictMixin(object):
     This class basically proxies dictionary access to an attribute
     called ``_proxied``.  The class which inherits this class
     should have an attribute called ``_proxied`` which points to a dictionary.
-
     """
 
     def __len__(self):
@@ -152,6 +151,7 @@ class DBCalculator(ProxiedDictMixin, Base):
     id = Column(Integer, primary_key=True)
     name = Column(String)
     version = Column(String)
+    description = Column(String)
     attributes = relationship("DBCalculatorAttribute",
                     collection_class=attribute_mapped_collection('key'))
     _proxied = association_proxy("attributes", "value",

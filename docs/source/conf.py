@@ -35,7 +35,7 @@ class Mock(MagicMock):
         return Mock()
 
 MOCK_MODULES = ['argparse', 'numpy', 'scipy', 'scipy.optimize', 'scipy.constants', 'scipy.constants.value', 'pandas',
-    'sqlalchemy', 'sqlalchemy.orm', 'sqlalchemy.ext', 'sqlalchemy.ext.associationproxy',
+    'sqlalchemy', 'sqlalchemy.orm', 'sqlalchemy.orm.collections', 'sqlalchemy.orm.interfaces', 'sqlalchemy.ext', 'sqlalchemy.ext.associationproxy',
     'sqlalchemy.ext.declarative', 'sqlalchemy.ext.hybrid', 'mendeleev']
 sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
