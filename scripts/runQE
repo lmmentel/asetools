@@ -32,7 +32,7 @@ def main():
 			help='Method used in freq. summary(),eg. frederiksen')
     group.add_argument('--indices',
 			default='[]',
-			help='Indices of atoms to be displaced in frequency calculation. Default: all indices')
+			help='Indices of atoms to be displaced in frequency calculation. E.g. indices=\'1,2,3\'. Default: all indices')
     group.add_argument('--hydrocarbon',
                         action="store_true",
                         help='Include only hydrocarbon atoms (C,H,N) in frequency calculation. Default: False')
@@ -78,7 +78,7 @@ def main():
                         action="store_true",
                         default=False,
                         help='If true, builds cell around input molecule wih 7.5 AA vacuum in all directions. Also sets force threshold=0.01 eV/AA. Default: False.')
-    parser.add_argument('--nativeqe',
+    parser.add_argument('--native',
                         action="store_true",
                         default=False,
                         help='Uses internal espresso routines, instead of through the ase-espresso interface')
@@ -96,7 +96,7 @@ def main():
 	if args['hydrocarbon']:
 	   args['indices'] = str(get_indices_by_symbols(read(args['input']),['C','N','H']))
 	args['input'] = '../../'+args['input'] #assumes script is run in same directory as input file. Will fail otherwise
-	if args['nativeqe']: #espresso style
+	if args['native']: #espresso style
 	   tname = 'QEnative_template.py'
 	   calcdir = 'Frequencies/qe_native'
 	   args['nativemode'] = 'scf'
@@ -107,12 +107,15 @@ def main():
 	   if args['kpts'] == '\'gamma\'':
                 args['kpts'] = '(1,1,1)' #gamma point trick cannot be used in phonon calculation
 	   #parameters for ph.x (phonon calculation)
-	   args['indices'] = args['indices'].translate(None,'[]').split(',')
-	   args['indices'] = [int(x)+1 for x in args['indices']] #espresso enumerates atoms from 1 not from 0 like ASE
 	   args['nat_todo'] = ''
   	   args['phextrapars'] = ''
-  	   if len(args['indices']) > 0:
+	   if args['indices'] == '[]':
+		args['indices'] = ''
+  	   else:
+		args['indices'] = args['indices'].translate(None,'[]').split(',')
+		args['indices'] = [str(int(x)+1) for x in args['indices']] #espresso enumerates atoms from 1 not from 0 like ASE
                 args['nat_todo']='nat_todo=%d,' % len(args['indices'])
+		args['indices'] = ' '.join(map(str,args['indices']))
            	args['phextrapars'] = 'nogg=.true.,\n'
   	   if args['IR']: #note: only available with internal espresso routines
               args['phextrapars'] += '  zue=.true,\n  epsil=.true.,\n  trans=.true.'
@@ -142,7 +145,7 @@ def main():
            if args['charge']:
               print 'Charged molecule. Turning on assume_isolated screening, using Martyna-Tuckerman correction.'
               args['screening']='mt'	
-    	if args['nativeqe']: #espresso style
+    	if args['native']: #espresso style
 	   tname = 'QEnative_template.py'
            if args['opt']:
               args['nativemode'] = 'bfgs'
@@ -159,8 +162,8 @@ def main():
     inputstr = Template(get_template(tname)).substitute(args)
     with open('input.py','w') as finp:
 	finp.write(inputstr)
-    if args['nativeqe']: 
-	args['exargs'] += ['--nativeqe'] #to be passed on to submitQE
+    if args['native']: 
+	args['exargs'] += ['--native'] #to be passed on to submitQE
 	exec(inputstr) #generate native espresso input file for pw.x
 	if args['thermo']: #write additional files for ph.x and dynmat.x
            phtemplate = Template(get_template('ph_template.py'))
