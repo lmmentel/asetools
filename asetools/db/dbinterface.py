@@ -108,9 +108,9 @@ def atoms2system(atoms, username=None, name=None, framework=None, notes={}):
 
     inimagm = atoms.get_initial_magnetic_moments()
     inichar = atoms.get_initial_charges()
-    #forces = atoms.get_forces()
+    forces = atoms.get_forces()
 
-    for atom, imagm, icharge in zip(atoms, inimagm, inichar):
+    for atom, imagm, icharge, force in zip(atoms, inimagm, inichar, forces):
 
         dbatoms.append(DBAtom(
             atomic_number=atom.number,
@@ -119,6 +119,9 @@ def atoms2system(atoms, username=None, name=None, framework=None, notes={}):
             x=atom.position[0],
             y=atom.position[1],
             z=atom.position[2],
+            force_x=force[0],
+            force_y=force[1],
+            force_z=force[2],
             momentum_x=atom.momentum[0],
             momentum_y=atom.momentum[1],
             momentum_z=atom.momentum[2],
