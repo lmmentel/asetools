@@ -8,20 +8,49 @@ import math
 from ase import Atom
 from scipy.constants import value
 from collections import Counter
+from string import Template
 
 N_A = value('Avogadro constant')
 eV2J = value('electron volt-joule relationship')
 Ry_to_eV = value('Rydberg constant times hc in eV')
+# inverse cm to eV relationship is m1_to_eV*100.0
 m1_to_eV = value('inverse meter-electron volt relationship')
 
-# inverse cm to eV relationship is m1_to_eV*100.0
-#Ry_to_eV = 13.605698066
-#cm1_to_eV = 0.000123984257314843
+class AseTemplate(Template):
+    'A subclass of the string.Template with altered delimiter and extra methods'
+
+    delimiter = '%'
+    idpattern = r'[a-z][_a-z0-9]*'
+
+    def get_keys(self):
+        '''Parse the string and return a dict with possible keys to substitute.
+        For most use case only the `named` fields are interesting'''
+
+        keys = {}
+        match = self.pattern.findall(self.template)
+        for k, v in self.pattern.groupindex.items():
+            keys[k] = [x[v-1] for x in match if x[v-1] != '']
+        return keys
+
+    def render_and_write(self, subs, output='input.py'):
+        '''
+        Write a file rendered template to a file.
+
+        Args:
+          subs : dict
+            Subsitution to be made in the template string
+          output : str
+            Name of the file to be written
+        '''
+
+        rendered = self.substitute(subs)
+        with open(output, 'w') as fout:
+            fout.write(rendered)
 
 def eV_to_kJmol(energy):
     '''
     Convert the energy from eV to kJ/mol
-    
+
     Args:
       energy : float
         Energy in eV
