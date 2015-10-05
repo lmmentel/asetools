@@ -93,6 +93,8 @@ def get_atoms(session, system_id):
     atoms.set_cell(cellpar_to_cell([q.cell_a, q.cell_b, q.cell_c,
                                     q.cell_alpha, q.cell_beta, q.cell_gamma]))
     atoms.set_pbc([q.pbc_a, q.pbc_b, q.pbc_c])
+    atoms.info['name'] = q.name
+    atoms.info['framework'] = q.framework
 
     return atoms
 
