@@ -11,6 +11,7 @@ setup(
     entry_points = {
         'console_scripts' : [
             'submitQE = asetools.submit:main',
+            'dbadd = asetools.db.dbinterface:add_system',
         ]
     },
     scripts = [

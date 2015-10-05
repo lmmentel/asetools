@@ -4,11 +4,13 @@
 
 from __future__ import unicode_literals, print_function, division
 
+import argparse
 import json
 import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import numpy as np
+import ase.io
 from ase import Atoms
 from ase.lattice.spacegroup.cell import cellpar_to_cell, cell_to_cellpar
 from .model import Base, DBAtom, System, ASETemplate, DBCalculator
@@ -227,3 +229,69 @@ def hasattribute(obj, name, default=None):
     else:
         out = default
     return out
+
+def from_traj(session, traj, name, framework, notes, calcid=None, tempid=None):
+    '''
+    Extract the relevant data from the trajectory file and add them as a row
+    to the systems table in the database
+
+    Args:
+      session : session
+        Database connection
+      traj : str
+        ASE trajectory file with the data
+      name : str
+        Name of the system to be stored
+      framework : str
+        Three letter framework topology code
+      notes : dict
+        Additional properties to be stored with the system (as dict)
+      calcid : int
+        Calcualtor id from the db
+      tempid : int
+        ASETemplate id from the db
+    '''
+
+    user = os.getenv('USER')
+
+    atoms = ase.io.read(traj)
+    system = atoms2system(atoms, username=user, name=name, framework=framework,
+            notes=notes)
+
+    if calcid:
+        system.calculator = session.query(DBCalculator).get(calcid)
+    if tempid:
+        system.template = session.query(ASETemplate).get(tempid)
+
+    session.add(system)
+    session.commit()
+
+def add_system():
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('db', help='database file')
+    parser.add_argument('traj', help='trajectory file')
+    parser.add_argument('-n', '--name', help='name of the system')
+    parser.add_argument('-f', '--framework', help='framework code')
+    parser.add_argument('-c', '--calcid', help='calculator id')
+    parser.add_argument('-a', '--tempid', help='ase template id')
+    parser.add_argument('--notes', help='additional system info')
+
+    args = parser.parse_args()
+
+    if os.path.exists(args.db):
+        session = get_session(args.db)
+    else:
+        raise ValueError('db does not exist : ', args.db)
+
+    if not os.path.exists(args.traj):
+        raise ValueError('traj does not exist : ', args.traj)
+
+    if args.notes:
+        args.notes = json.loads(args.notes)
+
+    from_traj(session=session, traj=args.traj, name=args.name,
+              framework=args.framework, notes=args.notes,
+              calcid=args.calcid, tempid=args.calcid)
+
