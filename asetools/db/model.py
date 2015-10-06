@@ -252,8 +252,8 @@ class System(ProxiedDictMixin, Base):
         Name of the user
       name : str
         Name of the system
-      framework : str
-        Three letter code of the zeolite framework
+      topology : str
+        Three letter code of the zeolite framework topology
       formula : str
         Chemical formula of the system (unit cell)
     '''
@@ -312,7 +312,7 @@ class System(ProxiedDictMixin, Base):
 #        self.name = name
 
     def __repr__(self):
-        return "System(%r)" % self.framework
+        return "<System(name={0:s}, topology={1:s})>".format(self.name, self.topology)
 
     @classmethod
     def with_note(self, key, value):

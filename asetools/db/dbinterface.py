@@ -94,7 +94,7 @@ def get_atoms(session, system_id):
                                     q.cell_alpha, q.cell_beta, q.cell_gamma]))
     atoms.set_pbc([q.pbc_a, q.pbc_b, q.pbc_c])
     atoms.info['name'] = q.name
-    atoms.info['framework'] = q.framework
+    atoms.info['topology'] = q.topology
 
     return atoms
 
@@ -106,7 +106,7 @@ def get_template(session, ids):
         q = session.query(ASETemplate).filter(ASETemplate.name == ids).one()
     return q.template
 
-def atoms2system(atoms, username=None, name=None, framework=None, notes={}):
+def atoms2system(atoms, username=None, name=None, topology=None, notes={}):
 
     dbatoms = []
 
@@ -141,7 +141,7 @@ def atoms2system(atoms, username=None, name=None, framework=None, notes={}):
     system = System(
         username=username,
         name=name,
-        framework=framework,
+        topology=topology,
         formula=atoms.get_chemical_formula(),
         cell_a=cellpar[0],
         cell_b=cellpar[1],
@@ -232,7 +232,7 @@ def hasattribute(obj, name, default=None):
         out = default
     return out
 
-def from_traj(session, traj, name, framework, notes, calcid=None, tempid=None):
+def from_traj(session, traj, name, topology, notes, calcid=None, tempid=None):
     '''
     Extract the relevant data from the trajectory file and add them as a row
     to the systems table in the database
@@ -244,7 +244,7 @@ def from_traj(session, traj, name, framework, notes, calcid=None, tempid=None):
         ASE trajectory file with the data
       name : str
         Name of the system to be stored
-      framework : str
+      topology : str
         Three letter framework topology code
       notes : dict
         Additional properties to be stored with the system (as dict)
@@ -257,7 +257,7 @@ def from_traj(session, traj, name, framework, notes, calcid=None, tempid=None):
     user = os.getenv('USER')
 
     atoms = ase.io.read(traj)
-    system = atoms2system(atoms, username=user, name=name, framework=framework,
+    system = atoms2system(atoms, username=user, name=name, topology=topology,
             notes=notes)
 
     if calcid:
@@ -275,7 +275,7 @@ def add_system():
     parser.add_argument('db', help='database file')
     parser.add_argument('traj', help='trajectory file')
     parser.add_argument('-n', '--name', help='name of the system')
-    parser.add_argument('-f', '--framework', help='framework code')
+    parser.add_argument('-t', '--topology', help='framework topology code')
     parser.add_argument('-c', '--calcid', help='calculator id')
     parser.add_argument('-a', '--tempid', help='ase template id')
     parser.add_argument('--notes', help='additional system info')
@@ -294,6 +294,6 @@ def add_system():
         args.notes = json.loads(args.notes)
 
     from_traj(session=session, traj=args.traj, name=args.name,
-              framework=args.framework, notes=args.notes,
+              topology=args.topology, notes=args.notes,
               calcid=args.calcid, tempid=args.calcid)
 
