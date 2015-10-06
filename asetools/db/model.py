@@ -267,7 +267,7 @@ class System(ProxiedDictMixin, Base):
     username = Column(String)
 
     name = Column(String)
-    framework = Column(String(3))
+    topology = Column(String(3))
     formula = Column(String)
 
     cell_a = Column(Float)
