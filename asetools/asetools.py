@@ -250,7 +250,8 @@ def attach_atom(atoms, ind, symbol='H', theta=-45.0, r=1.5):
       symbol : str
         symbol of the new atom that will be attached
       theta : float
-        angle at which the new will be positioned with respect to the selected atom
+        angle at which the new will be positioned with respect to the selected
+        atom
       r : float
         distance of the new atom with respect to the selected atom
     '''
@@ -280,7 +281,8 @@ def attach_molecule(atoms, ind, molecule, theta=-45.0, r=2.5):
       theta : float
         Angle at which the center of mass of the `molecule` will be placed
       r : float
-        Distance along angle `theta` at which the center of mass of the `molecule` will be placed
+        Distance along angle `theta` at which the center of mass of the
+        `molecule` will be placed
 
     Returns:
       res : ase.Atoms
@@ -306,7 +308,10 @@ def get_SiAlratio(atoms):
 
 def smart_cell(s, vac=5.0, h=0.2):
     '''
-    returns the Atoms object centered in a cell with a size that ensures minimum vac distance to the cell wall in all directions, and adapts the cell to yield exactly the grid spacing h (only relevant for real-space grid codes like gpaw). For single atoms the cell is non-cubic to break symmetry.
+    Returns the Atoms object centered in a cell with a size that ensures
+    minimum vac distance to the cell wall in all directions, and adapts the
+    cell to yield exactly the grid spacing h (only relevant for real-space grid
+    codes like gpaw). For single atoms the cell is non-cubic to break symmetry.
     '''
     s.center(vac)
     pos = s.get_positions()
@@ -328,7 +333,9 @@ def smart_cell(s, vac=5.0, h=0.2):
     s.center()
 
 def set_init_magmoms(atoms, magset):
-    '''sets initial magmoms for elements specified in magset. E.g. ('Ni',1.0) will set the initial magnetic moment of all Ni atoms to 1.0'''
+    '''sets initial magmoms for elements specified in magset. E.g. ('Ni',1.0)
+    will set the initial magnetic moment of all Ni atoms to 1.0'''
+
     indxs = []
     for name,magmom in magset:
         idxs = get_indices_by_symbols(atoms,name)
@@ -340,7 +347,9 @@ def set_init_magmoms(atoms, magset):
         set_init_magmoms_from_indxs(atoms,indxs)
 
 def set_init_magmoms_from_indxs(atoms, indxs):
-    '''sets initial magmoms for atoms specified in indxs. E.g (1, 1.0) will set the initial magnetic moment of atoms[1] to 1.0'''
+    '''sets initial magmoms for atoms specified in indxs. E.g (1, 1.0) will set
+    the initial magnetic moment of atoms[1] to 1.0'''
+
     magmoms = atoms.get_initial_magnetic_moments()
     new_magmoms = [0.0 for _ in magmoms]
     for (atom, magmom) in indxs:
