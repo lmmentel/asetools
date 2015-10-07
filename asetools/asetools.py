@@ -6,6 +6,8 @@ import sys
 import numpy as np
 import math
 from ase import Atom
+import ase.io
+from asetools import submit
 from scipy.constants import value
 from collections import Counter
 from string import Template
@@ -355,3 +357,37 @@ def set_init_magmoms_from_indxs(atoms, indxs):
     for (atom, magmom) in indxs:
         new_magmoms[atom] = magmom
     atoms.set_initial_magnetic_moments(new_magmoms)
+
+
+def create_single_job(workdir, atoms, template, subs, jobname='input.py',
+        submitargs=None):
+    '''
+    Create a directory for a job and write the initial structure and job script
+    to it.
+
+    Args:
+      workdir : str
+        Name of the directory for the job
+      atoms : ase.Atoms
+        Atoms object with the initial geometry
+      template : str
+        ASE template string with the job description
+      subs : dict
+        Dictionary of items to be substituted into the template
+      jobname : str
+        Name of the ase job script
+      submitargs : list
+        List of string attributes to pass to the submitter (submitQE) in order
+        to send the job to the queue
+
+    '''
+
+    os.mkdir(workdir)
+    os.chdir(workdir)
+    ase.io.write(subs['atoms'], atoms)
+    t = AseTemplate(template)
+    t.render_and_write(subs, output=jobname)
+    if submitargs:
+        submitargs.insert(0, jobname)
+        submit.main(submitargs)
+    os.chdir('..')
