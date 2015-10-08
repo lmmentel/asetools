@@ -7,7 +7,6 @@ import numpy as np
 import math
 from ase import Atom
 import ase.io
-from asetools import submit
 from scipy.constants import value
 from collections import Counter
 from string import Template
@@ -387,7 +386,42 @@ def create_single_job(workdir, atoms, template, subs, jobname='input.py',
     ase.io.write(subs['atoms'], atoms)
     t = AseTemplate(template)
     t.render_and_write(subs, output=jobname)
-    if submitargs:
-        submitargs.insert(0, jobname)
-        submit.main(submitargs)
+    #if submitargs:
+    #    submitargs.insert(0, jobname)
+    #    submit.main(submitargs)
     os.chdir('..')
+
+def find_closest(atoms, reference, symbol=None, n=1):
+    '''
+    Return a list of indices of atoms closest to the reference atom
+
+    Args:
+      atoms : ase.Atoms
+        ASE Atoms object
+      reference : int
+        Index of the reference atom
+      symbol : str
+        Symbol of the atom that will be taken into account when searching for
+        nearest to the refence
+      n : int
+        Number of nearest atoms to be returned
+
+    Returns:
+      out : np.array
+        A structured, sorted array with `n` records each composed of an index,
+        symbol and distance to reference atoms
+    '''
+
+    pos = atoms.get_positions()
+    d = np.sqrt(np.power(pos - pos[reference], 2).sum(axis=1))
+
+    out = np.array(zip(range(len(atoms)), atoms.get_chemical_symbols(), d),
+            dtype=[('idx', int), ('symbol', '|S2'), ('dist', float)])
+
+    out = out[out['idx'] != reference]
+    out = np.sort(out, order='dist')
+
+    if symbol:
+        out = out[out['symbol'] == symbol]
+
+    return out[:n]
