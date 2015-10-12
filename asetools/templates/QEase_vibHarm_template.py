@@ -7,7 +7,7 @@ from ase.thermochemistry import HarmonicThermo,rotationalinertia
 import os,pickle
 from ase.parallel import rank
 from ase import units,Atoms
-from asetools import cm1_to_eV,set_init_magmoms
+from asetools import m1_to_eV,set_init_magmoms
 
 atoms = read('$input')
 
