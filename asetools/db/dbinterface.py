@@ -4,11 +4,13 @@
 
 from __future__ import unicode_literals, print_function, division
 
+import argparse
 import json
 import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import numpy as np
+import ase.io
 from ase import Atoms
 from ase.lattice.spacegroup.cell import cellpar_to_cell, cell_to_cellpar
 from .model import Base, DBAtom, System, ASETemplate, DBCalculator
@@ -91,6 +93,8 @@ def get_atoms(session, system_id):
     atoms.set_cell(cellpar_to_cell([q.cell_a, q.cell_b, q.cell_c,
                                     q.cell_alpha, q.cell_beta, q.cell_gamma]))
     atoms.set_pbc([q.pbc_a, q.pbc_b, q.pbc_c])
+    atoms.info['name'] = q.name
+    atoms.info['topology'] = q.topology
 
     return atoms
 
@@ -102,15 +106,15 @@ def get_template(session, ids):
         q = session.query(ASETemplate).filter(ASETemplate.name == ids).one()
     return q.template
 
-def atoms2system(atoms, username=None, name=None, framework=None, notes={}):
+def atoms2system(atoms, username=None, name=None, topology=None, notes={}):
 
     dbatoms = []
 
     inimagm = atoms.get_initial_magnetic_moments()
     inichar = atoms.get_initial_charges()
-    #forces = atoms.get_forces()
+    forces = atoms.get_forces()
 
-    for atom, imagm, icharge in zip(atoms, inimagm, inichar):
+    for atom, imagm, icharge, force in zip(atoms, inimagm, inichar, forces):
 
         dbatoms.append(DBAtom(
             atomic_number=atom.number,
@@ -119,6 +123,9 @@ def atoms2system(atoms, username=None, name=None, framework=None, notes={}):
             x=atom.position[0],
             y=atom.position[1],
             z=atom.position[2],
+            force_x=force[0],
+            force_y=force[1],
+            force_z=force[2],
             momentum_x=atom.momentum[0],
             momentum_y=atom.momentum[1],
             momentum_z=atom.momentum[2],
@@ -134,7 +141,7 @@ def atoms2system(atoms, username=None, name=None, framework=None, notes={}):
     system = System(
         username=username,
         name=name,
-        framework=framework,
+        topology=topology,
         formula=atoms.get_chemical_formula(),
         cell_a=cellpar[0],
         cell_b=cellpar[1],
@@ -224,3 +231,69 @@ def hasattribute(obj, name, default=None):
     else:
         out = default
     return out
+
+def from_traj(session, traj, name, topology, notes, calcid=None, tempid=None):
+    '''
+    Extract the relevant data from the trajectory file and add them as a row
+    to the systems table in the database
+
+    Args:
+      session : session
+        Database connection
+      traj : str
+        ASE trajectory file with the data
+      name : str
+        Name of the system to be stored
+      topology : str
+        Three letter framework topology code
+      notes : dict
+        Additional properties to be stored with the system (as dict)
+      calcid : int
+        Calcualtor id from the db
+      tempid : int
+        ASETemplate id from the db
+    '''
+
+    user = os.getenv('USER')
+
+    atoms = ase.io.read(traj)
+    system = atoms2system(atoms, username=user, name=name, topology=topology,
+            notes=notes)
+
+    if calcid:
+        system.calculator = session.query(DBCalculator).get(calcid)
+    if tempid:
+        system.template = session.query(ASETemplate).get(tempid)
+
+    session.add(system)
+    session.commit()
+
+def add_system():
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('db', help='database file')
+    parser.add_argument('traj', help='trajectory file')
+    parser.add_argument('-n', '--name', help='name of the system')
+    parser.add_argument('-t', '--topology', help='framework topology code')
+    parser.add_argument('-c', '--calcid', help='calculator id')
+    parser.add_argument('-a', '--tempid', help='ase template id')
+    parser.add_argument('--notes', help='additional system info')
+
+    args = parser.parse_args()
+
+    if os.path.exists(args.db):
+        session = get_session(args.db)
+    else:
+        raise ValueError('db does not exist : ', args.db)
+
+    if not os.path.exists(args.traj):
+        raise ValueError('traj does not exist : ', args.traj)
+
+    if args.notes:
+        args.notes = json.loads(args.notes)
+
+    from_traj(session=session, traj=args.traj, name=args.name,
+              topology=args.topology, notes=args.notes,
+              calcid=args.calcid, tempid=args.calcid)
+

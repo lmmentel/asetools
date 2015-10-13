@@ -6,22 +6,52 @@ import sys
 import numpy as np
 import math
 from ase import Atom
+import ase.io
 from scipy.constants import value
 from collections import Counter
+from string import Template
 
 N_A = value('Avogadro constant')
 eV2J = value('electron volt-joule relationship')
 Ry_to_eV = value('Rydberg constant times hc in eV')
+# inverse cm to eV relationship is m1_to_eV*100.0
 m1_to_eV = value('inverse meter-electron volt relationship')
 
-# inverse cm to eV relationship is m1_to_eV*100.0
-#Ry_to_eV = 13.605698066
-#cm1_to_eV = 0.000123984257314843
+class AseTemplate(Template):
+    'A subclass of the string.Template with altered delimiter and extra methods'
+
+    delimiter = '%'
+    idpattern = r'[a-z][_a-z0-9]*'
+
+    def get_keys(self):
+        '''Parse the string and return a dict with possible keys to substitute.
+        For most use case only the `named` fields are interesting'''
+
+        keys = {}
+        match = self.pattern.findall(self.template)
+        for k, v in self.pattern.groupindex.items():
+            keys[k] = [x[v-1] for x in match if x[v-1] != '']
+        return keys
+
+    def render_and_write(self, subs, output='input.py'):
+        '''
+        Write a file rendered template to a file.
+
+        Args:
+          subs : dict
+            Subsitution to be made in the template string
+          output : str
+            Name of the file to be written
+        '''
+
+        rendered = self.substitute(subs)
+        with open(output, 'w') as fout:
+            fout.write(rendered)
 
 def eV_to_kJmol(energy):
     '''
     Convert the energy from eV to kJ/mol
-    
+
     Args:
       energy : float
         Energy in eV
@@ -221,7 +251,8 @@ def attach_atom(atoms, ind, symbol='H', theta=-45.0, r=1.5):
       symbol : str
         symbol of the new atom that will be attached
       theta : float
-        angle at which the new will be positioned with respect to the selected atom
+        angle at which the new will be positioned with respect to the selected
+        atom
       r : float
         distance of the new atom with respect to the selected atom
     '''
@@ -251,7 +282,8 @@ def attach_molecule(atoms, ind, molecule, theta=-45.0, r=2.5):
       theta : float
         Angle at which the center of mass of the `molecule` will be placed
       r : float
-        Distance along angle `theta` at which the center of mass of the `molecule` will be placed
+        Distance along angle `theta` at which the center of mass of the
+        `molecule` will be placed
 
     Returns:
       res : ase.Atoms
@@ -277,7 +309,10 @@ def get_SiAlratio(atoms):
 
 def smart_cell(s, vac=5.0, h=0.2):
     '''
-    returns the Atoms object centered in a cell with a size that ensures minimum vac distance to the cell wall in all directions, and adapts the cell to yield exactly the grid spacing h (only relevant for real-space grid codes like gpaw). For single atoms the cell is non-cubic to break symmetry.
+    Returns the Atoms object centered in a cell with a size that ensures
+    minimum vac distance to the cell wall in all directions, and adapts the
+    cell to yield exactly the grid spacing h (only relevant for real-space grid
+    codes like gpaw). For single atoms the cell is non-cubic to break symmetry.
     '''
     s.center(vac)
     pos = s.get_positions()
@@ -299,7 +334,9 @@ def smart_cell(s, vac=5.0, h=0.2):
     s.center()
 
 def set_init_magmoms(atoms, magset):
-    '''sets initial magmoms for elements specified in magset. E.g. ('Ni',1.0) will set the initial magnetic moment of all Ni atoms to 1.0'''
+    '''sets initial magmoms for elements specified in magset. E.g. ('Ni',1.0)
+    will set the initial magnetic moment of all Ni atoms to 1.0'''
+
     indxs = []
     for name,magmom in magset:
         idxs = get_indices_by_symbols(atoms,name)
@@ -311,9 +348,80 @@ def set_init_magmoms(atoms, magset):
         set_init_magmoms_from_indxs(atoms,indxs)
 
 def set_init_magmoms_from_indxs(atoms, indxs):
-    '''sets initial magmoms for atoms specified in indxs. E.g (1, 1.0) will set the initial magnetic moment of atoms[1] to 1.0'''
+    '''sets initial magmoms for atoms specified in indxs. E.g (1, 1.0) will set
+    the initial magnetic moment of atoms[1] to 1.0'''
+
     magmoms = atoms.get_initial_magnetic_moments()
     new_magmoms = [0.0 for _ in magmoms]
     for (atom, magmom) in indxs:
         new_magmoms[atom] = magmom
     atoms.set_initial_magnetic_moments(new_magmoms)
+
+
+def create_single_job(workdir, atoms, template, subs, jobname='input.py',
+        submitargs=None):
+    '''
+    Create a directory for a job and write the initial structure and job script
+    to it.
+
+    Args:
+      workdir : str
+        Name of the directory for the job
+      atoms : ase.Atoms
+        Atoms object with the initial geometry
+      template : str
+        ASE template string with the job description
+      subs : dict
+        Dictionary of items to be substituted into the template
+      jobname : str
+        Name of the ase job script
+      submitargs : list
+        List of string attributes to pass to the submitter (submitQE) in order
+        to send the job to the queue
+
+    '''
+
+    os.mkdir(workdir)
+    os.chdir(workdir)
+    ase.io.write(subs['atoms'], atoms)
+    t = AseTemplate(template)
+    t.render_and_write(subs, output=jobname)
+    #if submitargs:
+    #    submitargs.insert(0, jobname)
+    #    submit.main(submitargs)
+    os.chdir('..')
+
+def find_closest(atoms, reference, symbol=None, n=1):
+    '''
+    Return a list of indices of atoms closest to the reference atom
+
+    Args:
+      atoms : ase.Atoms
+        ASE Atoms object
+      reference : int
+        Index of the reference atom
+      symbol : str
+        Symbol of the atom that will be taken into account when searching for
+        nearest to the refence
+      n : int
+        Number of nearest atoms to be returned
+
+    Returns:
+      out : np.array
+        A structured, sorted array with `n` records each composed of an index,
+        symbol and distance to reference atoms
+    '''
+
+    pos = atoms.get_positions()
+    d = np.sqrt(np.power(pos - pos[reference], 2).sum(axis=1))
+
+    out = np.array(zip(range(len(atoms)), atoms.get_chemical_symbols(), d),
+            dtype=[('idx', int), ('symbol', '|S2'), ('dist', float)])
+
+    out = out[out['idx'] != reference]
+    out = np.sort(out, order='dist')
+
+    if symbol:
+        out = out[out['symbol'] == symbol]
+
+    return out[:n]
