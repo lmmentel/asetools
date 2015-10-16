@@ -134,7 +134,12 @@ def main():
      	      exit()
 
 	#change to Frequency dir for creating input files and submit job
-	os.makedirs(calcdir)
+	try:
+	   os.makedirs(calcdir)
+	except OSError, e:
+	   if e.errno !=17: #directory exists
+	     raise
+	   pass
   	os.chdir(calcdir)	
 
     else: #geometry optimization or single point
