@@ -163,6 +163,14 @@ class DBCalculator(ProxiedDictMixin, Base):
     def with_attr(self, key, value):
         return self.attributes.any(key=key, value=value)
 
+    def __repr__(self):
+
+        out = ["DBCalculator(id={0}, name='{1:s}', version={2:s}, description={3:s},".format(
+                self.id, self.name, self.version, self.description)]
+        out.extend(["\t{0:s} = {1}".format(k, v) for k, v in self.notes.items()])
+
+        return "\n".join(out) + ')'
+
 class ASETemplateNote(PolymorphicVerticalProperty, Base):
     '''class to handle storing key-value pairs for the calculator attributes'''
 
@@ -198,6 +206,14 @@ class ASETemplate(ProxiedDictMixin, Base):
     @classmethod
     def with_note(self, key, value):
         return self.notes.any(key=key, value=value)
+
+    def __repr__(self):
+
+        out = ["ASETemplate(id={0}, name='{1:s}', ase_version={2:s},".format(
+                self.id, self.name, self.ase_version)]
+        out.extend(["\t{0:s} = {1}".format(k, v) for k, v in self.notes.items()])
+
+        return "\n".join(out) + ')'
 
 class DBAtom(Base):
     '''Atom ORM object'''
@@ -317,3 +333,12 @@ class System(ProxiedDictMixin, Base):
     @classmethod
     def with_note(self, key, value):
         return self.notes.any(key=key, value=value)
+
+    def __repr__(self):
+
+        out = ["System(id={0}, name='{1:s}', topology={2:s}, formula={3:s},".format(
+                self.id, self.name, self.topology, self.formula)]
+        out.extend(["\t{0:s} = {1}".format(k, v) for k, v in self.notes.items()])
+
+        return "\n".join(out) + ')'
+
