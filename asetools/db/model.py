@@ -167,7 +167,7 @@ class DBCalculator(ProxiedDictMixin, Base):
 
         out = ["DBCalculator(id={0}, name='{1:s}', version={2:s}, description={3:s},".format(
                 self.id, self.name, self.version, self.description)]
-        out.extend(["\t{0:s} = {1}".format(k, v) for k, v in self.notes.items()])
+        out.extend(["\t{0:s} = {1}".format(k, v) for k, v in self.attributes.items()])
 
         return "\n".join(out) + ')'
 
