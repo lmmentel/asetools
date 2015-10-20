@@ -243,6 +243,11 @@ class DBAtom(Base):
     force_z = Column(Float)
     magmom = Column(Float)
 
+    def __repr__(self):
+
+        return "<DBAtom(atomic_number={0:d}, mass={1:10.4f}, x={2:10.4f}, y={3:10.4f}, z={4:10.4f})>".format(
+                self.atomic_number, self.mass, self.x, self.y, self.z)
+
 class SystemNote(PolymorphicVerticalProperty, Base):
     '''class to handle storing key-value pairs for the system'''
 
