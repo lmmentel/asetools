@@ -2,7 +2,8 @@
 
 ''' a database for storing the ase atoms abjects'''
 
-from __future__ import unicode_literals, print_function, division
+#from __future__ import unicode_literals, print_function, division
+from __future__ import print_function, division
 
 from sqlalchemy import (Column, LargeBinary, Integer, String, Float,
         PickleType, ForeignKey, DateTime, Unicode, UnicodeText, Boolean)
@@ -154,7 +155,8 @@ class DBCalculator(ProxiedDictMixin, Base):
     description = Column(String)
 
     attributes = relationship("DBCalculatorAttribute",
-                    collection_class=attribute_mapped_collection('key'))
+                    collection_class=attribute_mapped_collection('key'),
+                    cascade="all, delete-orphan")
     _proxied = association_proxy("attributes", "value",
                         creator=
                         lambda key, value: DBCalculatorAttribute(key=key, value=value))
@@ -197,7 +199,8 @@ class ASETemplate(ProxiedDictMixin, Base):
     ase_version = Column(String)
 
     notes = relationship('ASETemplateNote',
-                collection_class=attribute_mapped_collection('key'))
+                collection_class=attribute_mapped_collection('key'),
+                cascade="all, delete-orphan")
 
     _proxied = association_proxy('notes', 'value',
                         creator=
@@ -314,7 +317,7 @@ class System(ProxiedDictMixin, Base):
     #dipole_z = Column(Float)
     #stress = Column(PickleType)
 
-    atoms = relationship('DBAtom')
+    atoms = relationship('DBAtom', cascade="all, delete-orphan")
 
     calculator_id = Column(ForeignKey('calculators.id'))
     calculator = relationship('DBCalculator')
@@ -323,7 +326,8 @@ class System(ProxiedDictMixin, Base):
     template = relationship('ASETemplate')
 
     notes = relationship('SystemNote',
-                collection_class=attribute_mapped_collection('key'))
+                collection_class=attribute_mapped_collection('key'),
+                cascade="all, delete-orphan")
 
     _proxied = association_proxy('notes', 'value',
                         creator=

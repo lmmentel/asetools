@@ -2,7 +2,8 @@
 
 '''A module providing methods for communication between ASE and the database'''
 
-from __future__ import unicode_literals, print_function, division
+#from __future__ import unicode_literals, print_function, division
+from __future__ import print_function, division
 
 import argparse
 import json
@@ -112,7 +113,10 @@ def atoms2system(atoms, username=None, name=None, topology=None, notes={}):
 
     inimagm = atoms.get_initial_magnetic_moments()
     inichar = atoms.get_initial_charges()
-    forces = atoms.get_forces()
+    if atoms.get_calculator() is not None:
+        forces = atoms.get_forces()
+    else:
+        forces = [[None]*3 for _ in range(len(atoms))]
 
     for atom, imagm, icharge, force in zip(atoms, inimagm, inichar, forces):
 
@@ -199,7 +203,7 @@ def calculator2db(calc, attrs='basic', description=None):
              'basic' : ['calcmode', 'convergence', 'dw', 'kpts', 'pw', 'sigma',
                         'spinpol', 'xc']}
 
-    if isinstance(attrs, str):
+    if isinstance(attrs, (str, unicode)):
         if attrs in ['all', 'basic']:
             attrnames = cases[attrs]
     elif isinstance(attrs, (list, tuple)):
