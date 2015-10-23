@@ -107,7 +107,7 @@ def get_template(session, ids):
         q = session.query(ASETemplate).filter(ASETemplate.name == ids).one()
     return q.template
 
-def atoms2system(atoms, username=None, name=None, topology=None, notes={}):
+def atoms2system(atoms, username=None, name=None, topology=None, notes=None):
 
     dbatoms = []
 
@@ -160,8 +160,9 @@ def atoms2system(atoms, username=None, name=None, topology=None, notes={}):
         )
 
     # add the notes to the system instance
-    for key, value in notes.items():
-        system[key] = value
+    if notes:
+        for key, value in notes.items():
+            system[key] = value
 
     # if the calculation was done extract the forces and energies
     if atoms.get_calculator() is not None:
