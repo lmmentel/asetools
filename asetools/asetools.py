@@ -160,38 +160,44 @@ def swap(a, i, j):
     '''Swap items i and j in the list a'''
 
     a[i], a[j] = a[j], a[i]
+
     return a
 
 def swap_atompositions(atoms, i, j):
     '''Swap the positions of atom no i and j in an atoms object'''
-
-    atoms.set_positions(swap(atoms.get_positions(), i, j))
+    pos = atoms.get_positions()
+    newpos = pos.copy()
+    newpos[i] = pos[j]
+    newpos[j] = pos[i]
+    atoms.set_positions(newpos)
+    return atoms
 
 def swap_atoms(atoms, i, j):
     '''Swap the atoms no i and j in an atoms object'''
-
-    swap_atompositions(atoms, i, j)
-    symbol_i = atoms[i].symbol
-    index_i = atoms[i].index
-    atoms[i].symbol = atoms[j].symbol
-    atoms[i].index = atoms[j].index
-    atoms[j].symbol = symbol_i
-    atoms[j].index = index_i
+    acopy = atoms.copy()
+    swap_atompositions(atoms,i,j)
+    
+    atoms[i].index = j
+    atoms[j].index = i
+    atoms[i].symbol = acopy[j].symbol
+    atoms[j].symbol = acopy[i].symbol
+    return atoms
 
 def move_atom(atoms, i, j):
     '''function that moves atom i to position j'''
 
-    newsymbols = atoms.get_chemical_symbols()
-    pos = atoms.get_positions()
+    a = atoms.copy()
+    newsymbols = a.get_chemical_symbols()
+    pos = a.get_positions()
     if j < i:
-       newsymbols = np.delete(np.insert(newsymbols,j,atoms[i].symbol),i+1)
+       newsymbols = np.delete(np.insert(newsymbols,j,a[i].symbol),i+1)
        newpos = np.concatenate((pos[:j],[pos[i]],pos[j:i],pos[i+1:]))
     else:
-       newsymbols = np.insert(np.delete(newsymbols,i),j,atoms[i].symbol)
+       newsymbols = np.insert(np.delete(newsymbols,i),j,a[i].symbol)
        newpos = np.concatenate((pos[:i],pos[i+1:j+1],[pos[i]],pos[j+1:]))
-    atoms.set_chemical_symbols(newsymbols)
-    atoms.set_positions(newpos)
-    return
+    a.set_chemical_symbols(newsymbols)
+    a.set_positions(newpos)
+    return a
 
 def get_indices_by_symbols(atoms, symbollist, mode='include'):
     '''
