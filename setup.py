@@ -15,6 +15,7 @@ setup(
         ]
     },
     scripts = [
+        'scripts/aseconvert',
         'scripts/checkpointNEB',
         'scripts/checkpointQE',
         'scripts/cubecutperiodic',
