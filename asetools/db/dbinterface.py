@@ -14,7 +14,7 @@ import numpy as np
 import ase.io
 from ase import Atoms
 from ase.lattice.spacegroup.cell import cellpar_to_cell, cell_to_cellpar
-from .model import Base, DBAtom, System, ASETemplate, DBCalculator
+from .model import Base, DBAtom, System, DBTemplate, DBCalculator
 
 def get_session(dbpath, echo=False):
     '''Return the database session connection.'''
@@ -102,9 +102,9 @@ def get_atoms(session, system_id):
 def get_template(session, ids):
 
     if isinstance(ids, int):
-        q = session.query(ASETemplate).get(ids)
+        q = session.query(DBTemplate).get(ids)
     elif isinstance(ids, (str, unicode)):
-        q = session.query(ASETemplate).filter(ASETemplate.name == ids).one()
+        q = session.query(DBTemplate).filter(DBTemplate.name == ids).one()
     return q.template
 
 def atoms2system(atoms, username=None, name=None, topology=None, notes=None):
@@ -256,7 +256,7 @@ def from_traj(session, traj, name, topology, notes, calcid=None, tempid=None):
       calcid : int
         Calcualtor id from the db
       tempid : int
-        ASETemplate id from the db
+        DBTemplate id from the db
     '''
 
     user = os.getenv('USER')
@@ -268,7 +268,7 @@ def from_traj(session, traj, name, topology, notes, calcid=None, tempid=None):
     if calcid:
         system.calculator = session.query(DBCalculator).get(calcid)
     if tempid:
-        system.template = session.query(ASETemplate).get(tempid)
+        system.template = session.query(DBTemplate).get(tempid)
 
     session.add(system)
     session.commit()

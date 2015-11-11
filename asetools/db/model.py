@@ -2,8 +2,12 @@
 
 ''' a database for storing the ase atoms abjects'''
 
-#from __future__ import unicode_literals, print_function, division
 from __future__ import print_function, division
+
+from operator import attrgetter
+import datetime
+import numpy as np
+import os
 
 from sqlalchemy import (Column, LargeBinary, Integer, String, Float,
         PickleType, ForeignKey, DateTime, Unicode, UnicodeText, Boolean)
@@ -12,9 +16,6 @@ from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.hybrid import hybrid_property
-import os
-from operator import attrgetter
-import datetime
 
 # code  below is taken from:
 # http://docs.sqlalchemy.org/en/latest/_modules/examples/vertical/dictlike-polymorphic.html
@@ -173,7 +174,7 @@ class DBCalculator(ProxiedDictMixin, Base):
 
         return "\n".join(out) + ')'
 
-class ASETemplateNote(PolymorphicVerticalProperty, Base):
+class DBTemplateNote(PolymorphicVerticalProperty, Base):
     '''class to handle storing key-value pairs for the calculator attributes'''
 
     __tablename__ = 'asetemplate_notes'
@@ -189,7 +190,7 @@ class ASETemplateNote(PolymorphicVerticalProperty, Base):
     char_value = Column(UnicodeText, info={'type': (str, 'string')})
     boolean_value = Column(Boolean, info={'type': (bool, 'boolean')})
 
-class ASETemplate(ProxiedDictMixin, Base):
+class DBTemplate(ProxiedDictMixin, Base):
 
     __tablename__ = 'asetemplates'
 
@@ -198,13 +199,13 @@ class ASETemplate(ProxiedDictMixin, Base):
     template = Column(String)
     ase_version = Column(String)
 
-    notes = relationship('ASETemplateNote',
+    notes = relationship('DBTemplateNote',
                 collection_class=attribute_mapped_collection('key'),
                 cascade="all, delete-orphan")
 
     _proxied = association_proxy('notes', 'value',
                         creator=
-                        lambda key, value: ASETemplateNote(key=key, value=value))
+                        lambda key, value: DBTemplateNote(key=key, value=value))
 
     @classmethod
     def with_note(self, key, value):
@@ -212,7 +213,7 @@ class ASETemplate(ProxiedDictMixin, Base):
 
     def __repr__(self):
 
-        out = ["ASETemplate(id={0}, name='{1:s}', ase_version={2:s},".format(
+        out = ["DBTemplate(id={0}, name='{1:s}', ase_version={2:s},".format(
                 self.id, self.name, self.ase_version)]
         out.extend(["\t{0:s} = {1}".format(k, v) for k, v in self.notes.items()])
 
@@ -250,6 +251,36 @@ class DBAtom(Base):
 
         return "<DBAtom(atomic_number={0:d}, mass={1:10.4f}, x={2:10.4f}, y={3:10.4f}, z={4:10.4f})>".format(
                 self.atomic_number, self.mass, self.x, self.y, self.z)
+
+class JobPath(Base):
+
+    __tablename__ = 'paths'
+
+    id = Column(Integer, primary_key=True)
+    system_id = Column(Integer, ForeignKey('systems.id'))
+    name = Column(String)
+    abspath = Column(String)
+    inpname = Column(String)
+    outname = Column(String)
+    status = Column(String)
+
+    def __repr__(self):
+        return "%s(\n%s)" % (
+                 (self.__class__.__name__),
+                 ' '.join(["\t%s=%r,\n" % (key, getattr(self, key))
+                            for key in sorted(self.__dict__.keys())
+                            if not key.startswith('_')]))
+
+class Vibration(Base):
+
+    __tablename__ = 'vibrations'
+
+    id = Column(Integer, primary_key=True)
+    system_id = Column(Integer, ForeignKey('systems.id'), nullable=False)
+    energy = Column(Float, nullable=False)
+
+    def __repr__(self):
+        return "<Vibration(energy={0:15.8f})>".format(self.energy)
 
 class SystemNote(PolymorphicVerticalProperty, Base):
     '''class to handle storing key-value pairs for the system'''
@@ -317,13 +348,17 @@ class System(ProxiedDictMixin, Base):
     #dipole_z = Column(Float)
     #stress = Column(PickleType)
 
+    paths = relationship('JobPath', cascade="all, delete-orphan")
+
     atoms = relationship('DBAtom', cascade="all, delete-orphan")
+
+    _vibrations = relationship('Vibration', cascade="all, delete-orphan")
 
     calculator_id = Column(ForeignKey('calculators.id'))
     calculator = relationship('DBCalculator')
 
     template_id = Column(ForeignKey('asetemplates.id'))
-    template = relationship('ASETemplate')
+    template = relationship('DBTemplate')
 
     notes = relationship('SystemNote',
                 collection_class=attribute_mapped_collection('key'),
@@ -333,8 +368,15 @@ class System(ProxiedDictMixin, Base):
                         creator=
                         lambda key, value: SystemNote(key=key, value=value))
 
-#    def __init__(self, name):
-#        self.name = name
+    @hybrid_property
+    def vibenergies(self):
+        '''Return a numpy array with the vibration energies'''
+
+        values = [v.energy for v in self._vibrations]
+        if len(values) > 0:
+            return np.asarray(values, dtype=np.float64)
+        else:
+            return None
 
     def __repr__(self):
         return "<System(name={0:s}, topology={1:s})>".format(self.name, self.topology)
