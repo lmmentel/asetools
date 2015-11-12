@@ -376,9 +376,9 @@ class System(ProxiedDictMixin, Base):
     def vibenergies(self):
         '''Return a numpy array with the vibration energies'''
 
-        values = [v.energy for v in self._vibrations]
+        values = [v.energy_real + 1j*v.energy_imag for v in self._vibrations]
         if len(values) > 0:
-            return np.asarray(values, dtype=np.float64)
+            return np.asarray(values, dtype=np.complex128)
         else:
             return None
 
