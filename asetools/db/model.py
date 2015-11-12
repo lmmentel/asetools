@@ -284,7 +284,8 @@ class Vibration(Base):
 
     id = Column(Integer, primary_key=True)
     system_id = Column(Integer, ForeignKey('systems.id'), nullable=False)
-    energy = Column(Float, nullable=False)
+    energy_real = Column(Float, nullable=False)
+    energy_imag = Column(Float, nullable=False)
 
     def __repr__(self):
         return "<Vibration(energy={0:15.8f})>".format(self.energy)
