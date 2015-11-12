@@ -288,7 +288,8 @@ class Vibration(Base):
     energy_imag = Column(Float, nullable=False)
 
     def __repr__(self):
-        return "<Vibration(energy={0:15.8f})>".format(self.energy)
+        return "<Vibration(energy_real={0:15.8f}, energy_imag={1:15.8f})>".format(
+                self.energy_real, self.energy_imag)
 
 class SystemNote(PolymorphicVerticalProperty, Base):
     '''class to handle storing key-value pairs for the system'''
