@@ -21,6 +21,9 @@ def main():
     parser.add_argument('-i','--input',
                         default='startguess.traj',
                         help='Name and (relative) path of input file. Default=startguess.traj')
+    parser.add_argument('-o','--output',
+			default='dyn.traj',
+			help='Name and (relative) path of output file. Default=dn.traj')
     parser.add_argument('--kpts',
                         default='\'gamma\'',
                         help='Definition of kpts spanning the Brillouin zone. Default=gamma (special qe trick compared to (1,1,1))')

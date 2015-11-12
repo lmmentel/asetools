@@ -21,5 +21,5 @@ set_init_magmoms(atoms,[$magmoms])
 atoms.set_calculator(calc)
 $extralines
 
-qn = BFGS(atoms, logfile='qn.log',trajectory='dyn.traj')
+qn = BFGS(atoms, logfile='qn.log',trajectory='$output')
 qn.run(fmax=$fmax,steps=$steps)
