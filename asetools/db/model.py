@@ -252,17 +252,24 @@ class DBAtom(Base):
         return "<DBAtom(atomic_number={0:d}, mass={1:10.4f}, x={2:10.4f}, y={3:10.4f}, z={4:10.4f})>".format(
                 self.atomic_number, self.mass, self.x, self.y, self.z)
 
-class JobPath(Base):
+class Job(Base):
 
-    __tablename__ = 'paths'
+    __tablename__ = 'jobs'
 
     id = Column(Integer, primary_key=True)
     system_id = Column(Integer, ForeignKey('systems.id'))
     name = Column(String)
+    hostname = Column(String)
     abspath = Column(String)
     inpname = Column(String)
     outname = Column(String)
     status = Column(String)
+
+    calculator_id = Column(ForeignKey('calculators.id'))
+    calculator = relationship('DBCalculator')
+
+    template_id = Column(ForeignKey('asetemplates.id'))
+    template = relationship('DBTemplate')
 
     def __repr__(self):
         return "%s(\n%s)" % (
@@ -342,23 +349,18 @@ class System(ProxiedDictMixin, Base):
     entropy = Column(Float)
     free_energy = Column(Float)
     thermo = Column(String)
-    #magmom = Column(Float)
+    magnetic_moment = Column(Float)
     #dipole_x = Column(Float)
     #dipole_y = Column(Float)
     #dipole_z = Column(Float)
     #stress = Column(PickleType)
 
-    paths = relationship('JobPath', cascade="all, delete-orphan")
+    jobs = relationship('Job', cascade="all, delete-orphan")
 
     atoms = relationship('DBAtom', cascade="all, delete-orphan")
 
     _vibrations = relationship('Vibration', cascade="all, delete-orphan")
 
-    calculator_id = Column(ForeignKey('calculators.id'))
-    calculator = relationship('DBCalculator')
-
-    template_id = Column(ForeignKey('asetemplates.id'))
-    template = relationship('DBTemplate')
 
     notes = relationship('SystemNote',
                 collection_class=attribute_mapped_collection('key'),
