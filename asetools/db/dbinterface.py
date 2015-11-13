@@ -8,6 +8,7 @@ from __future__ import print_function, division
 import argparse
 import json
 import os
+import pandas as pd
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import numpy as np
@@ -32,6 +33,33 @@ def get_engine(dbpath):
 
     engine = create_engine("sqlite:///{path:s}".format(path=dbpath), echo=False)
     return engine
+
+def get_table(tablename,  dbpath, **kwargs):
+    '''
+    Return a table from the database as pandas DataFrame
+
+    Args:
+      tablename: str
+        Name of the table from the database
+      dbpath: str
+        Path to the database file
+      kwargs:
+        A dictionary of keyword arguments to pass to the `pandas.read_qsl`
+
+    Returns:
+      df: pandas.DataFrame
+        Pandas DataFrame with the contents of the table
+    '''
+
+    tables = ['systems', 'calculators', 'asetempaltes', 'jobs', 'atoms',
+              'vibrations']
+
+    if tablename in tables:
+        engine = get_engine(dbpath)
+        df = pd.read_sql(tablename, engine, **kwargs)
+        return df
+    else:
+        raise ValueError('Table should be one of: {}'.format(", ".join(tables)))
 
 def numpify(atomlist, attribute):
     '''

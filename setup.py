@@ -67,6 +67,7 @@ setup(
         #"ase",
         'numpy',
         'scipy',
+        'pandas',
     ],
     license = open("LICENSE.txt", "r").read(),
     long_description = open("README.md", "r").read(),
