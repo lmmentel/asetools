@@ -271,6 +271,16 @@ class Job(Base):
     template_id = Column(ForeignKey('asetemplates.id'))
     template = relationship('DBTemplate')
 
+    @hybrid_property
+    def inppath(self):
+        'Return the full path to the input file'
+        return os.path.join(self.abspath, self.inpname)
+
+    @hybrid_property
+    def outpath(self):
+        'Return the full path to the outpath file'
+        return os.path.join(self.abspath, self.outname)
+
     def __repr__(self):
         return "%s(\n%s)" % (
                  (self.__class__.__name__),
