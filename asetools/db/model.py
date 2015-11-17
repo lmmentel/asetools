@@ -212,6 +212,11 @@ class DBTemplate(ProxiedDictMixin, Base):
     def with_note(self, key, value):
         return self.notes.any(key=key, value=value)
 
+    def get_repl_keys(self):
+
+        t = AseTemplate(self.template)
+        return t.get_keys()
+
     def __repr__(self):
 
         out = ["DBTemplate(id={0}, name='{1:s}', ase_version={2:s},".format(
