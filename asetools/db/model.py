@@ -17,6 +17,7 @@ from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.hybrid import hybrid_property
 
+from asetools import AseTemplate
 # code  below is taken from:
 # http://docs.sqlalchemy.org/en/latest/_modules/examples/vertical/dictlike-polymorphic.html
 
@@ -281,7 +282,7 @@ class Job(Base):
         'Return the full path to the outpath file'
         return os.path.join(self.abspath, self.outname)
 
-    def create_job(self, repl, submitargs=None):
+    def create_job(self, repl):
         '''
         Create a directory for a job and write the job script to it based on
         the information from the Job instance.
@@ -289,19 +290,12 @@ class Job(Base):
         Args:
           repl : dict
             Dictionary of items to be replaced in the template
-          submitargs : list
-            List of string attributes to pass to the submitter (submitQE) in order
-            to send the job to the queue
-
         '''
 
         os.makedirs(self.abspath)
 
-        t = AseTemplate(job.template.template)
-        t.render_and_write(repl, output=job.outpath)
-        #if submitargs:
-        #    submitargs.insert(0, jobname)
-        #    submit.main(submitargs)
+        t = AseTemplate(self.template.template)
+        t.render_and_write(repl, output=self.inppath)
 
     def __repr__(self):
         return "%s(\n%s)" % (
