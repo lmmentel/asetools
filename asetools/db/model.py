@@ -281,6 +281,28 @@ class Job(Base):
         'Return the full path to the outpath file'
         return os.path.join(self.abspath, self.outname)
 
+    def create_job(self, repl, submitargs=None):
+        '''
+        Create a directory for a job and write the job script to it based on
+        the information from the Job instance.
+
+        Args:
+          repl : dict
+            Dictionary of items to be replaced in the template
+          submitargs : list
+            List of string attributes to pass to the submitter (submitQE) in order
+            to send the job to the queue
+
+        '''
+
+        os.makedirs(self.abspath)
+
+        t = AseTemplate(job.template.template)
+        t.render_and_write(repl, output=job.outpath)
+        #if submitargs:
+        #    submitargs.insert(0, jobname)
+        #    submit.main(submitargs)
+
     def __repr__(self):
         return "%s(\n%s)" % (
                  (self.__class__.__name__),
