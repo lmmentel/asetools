@@ -351,6 +351,8 @@ class System(ProxiedDictMixin, Base):
         Three letter code of the zeolite framework topology
       formula : str
         Chemical formula of the system (unit cell)
+      magnetic_moment: float
+	The total magnetic moment
     '''
 
     __tablename__ = 'systems'

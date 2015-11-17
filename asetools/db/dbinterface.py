@@ -135,7 +135,7 @@ def get_template(session, ids):
         q = session.query(DBTemplate).filter(DBTemplate.name == ids).one()
     return q.template
 
-def atoms2system(atoms, username=None, name=None, topology=None, notes=None):
+def atoms2system(atoms, username=None, name=None, topology=None, magnetic_moment=None, notes=None):
 
     dbatoms = []
 
@@ -185,6 +185,7 @@ def atoms2system(atoms, username=None, name=None, topology=None, notes=None):
         pbc_b=pbc[1],
         pbc_c=pbc[2],
         atoms=dbatoms,
+	magnetic_moment=magnetic_moment
         )
 
     # add the notes to the system instance
