@@ -170,7 +170,7 @@ def atoms2db(atoms):
 
     return dbatoms
 
-def atoms2system(atoms, username=None, name=None, topology=None, notes=None):
+def atoms2system(atoms, username=None, name=None, topology=None, magnetic_moment=None, notes=None):
 
     dbatoms = atoms2db(atoms)
 
@@ -192,6 +192,7 @@ def atoms2system(atoms, username=None, name=None, topology=None, notes=None):
         pbc_b=pbc[1],
         pbc_c=pbc[2],
         atoms=dbatoms,
+	    magnetic_moment=magnetic_moment
         )
 
     # add the notes to the system instance
