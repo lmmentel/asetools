@@ -135,7 +135,8 @@ def get_template(session, ids):
         q = session.query(DBTemplate).filter(DBTemplate.name == ids).one()
     return q.template
 
-def atoms2system(atoms, username=None, name=None, topology=None, notes=None):
+def atoms2db(atoms):
+    'Convert `ase.Atoms` object into a list of `asetools.DBAtom` objects and return'
 
     dbatoms = []
 
@@ -166,6 +167,12 @@ def atoms2system(atoms, username=None, name=None, topology=None, notes=None):
             initial_magmom=imagm,
             initial_charge=icharge,
         ))
+
+    return dbatoms
+
+def atoms2system(atoms, username=None, name=None, topology=None, notes=None):
+
+    dbatoms = atoms2db(atoms)
 
     cellpar = cell_to_cellpar(atoms.get_cell())
     pbc = atoms.get_pbc()
@@ -311,7 +318,7 @@ def add_system():
     parser.add_argument('-t', '--topology', help='framework topology code')
     parser.add_argument('-c', '--calcid', help='calculator id')
     parser.add_argument('-a', '--tempid', help='ase template id')
-    parser.add_argument('--notes', help='additional system info')
+    parser.add_argument('--notes', help='additional system info', default=dict())
 
     args = parser.parse_args()
 
