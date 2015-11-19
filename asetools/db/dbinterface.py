@@ -15,7 +15,7 @@ import numpy as np
 import ase.io
 from ase import Atoms
 from ase.lattice.spacegroup.cell import cellpar_to_cell, cell_to_cellpar
-from .model import Base, DBAtom, System, DBTemplate, DBCalculator
+from .model import Base, DBAtom, System, DBTemplate, DBCalculator,Vibration
 
 def get_session(dbpath, echo=False):
     '''Return the database session connection.'''
@@ -181,12 +181,17 @@ def atoms2db(atoms):
 
     return dbatoms
 
-def atoms2system(atoms, username=None, name=None, topology=None, magnetic_moment=None, notes=None):
+def atoms2system(atoms, username=None, name=None, topology=None, magnetic_moment=None, vibenergies=[], notes=None):
 
     dbatoms = atoms2db(atoms)
 
     cellpar = cell_to_cellpar(atoms.get_cell())
     pbc = atoms.get_pbc()
+
+    if len(vibenergies) > 0:
+	vibrations = [Vibration(energy_real=r, energy_imag=i) for (r, i) in zip(vibenergies.real, vibenergies.imag)]
+    else:
+	vibrations= []
 
     system = System(
         username=username,
@@ -203,7 +208,8 @@ def atoms2system(atoms, username=None, name=None, topology=None, magnetic_moment
         pbc_b=pbc[1],
         pbc_c=pbc[2],
         atoms=dbatoms,
-	    magnetic_moment=magnetic_moment
+	magnetic_moment=magnetic_moment,
+	_vibrations=vibrations
         )
 
     # add the notes to the system instance
