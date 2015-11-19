@@ -28,6 +28,12 @@ def get_session(dbpath, echo=False):
     db_session =  sessionmaker(bind=engine, autoflush=False, autocommit=False)
     return db_session()
 
+def get_pgsession(passwd=''):
+
+    engine = create_engine('postgresql+psycopg2://smn_kvantekjemi_test_user:{}@dbpg-hotel-utv.uio.no/smn_kvantekjemi_test'.format(passwd))
+    db_session =  sessionmaker(bind=engine, autoflush=False, autocommit=False)
+    return db_session()
+
 def get_engine(dbpath):
     '''Return the db engine'''
 
