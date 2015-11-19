@@ -364,7 +364,7 @@ class System(ProxiedDictMixin, Base):
     username = Column(String)
 
     name = Column(String)
-    topology = Column(String(3))
+    topology = Column(String)
     formula = Column(String)
 
     cell_a = Column(Float)
