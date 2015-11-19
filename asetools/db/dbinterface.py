@@ -188,11 +188,6 @@ def atoms2system(atoms, username=None, name=None, topology=None, magnetic_moment
     cellpar = cell_to_cellpar(atoms.get_cell())
     pbc = atoms.get_pbc()
 
-    if len(vibenergies) > 0:
-	vibrations = [Vibration(energy_real=r, energy_imag=i) for (r, i) in zip(vibenergies.real, vibenergies.imag)]
-    else:
-	vibrations= []
-
     system = System(
         username=username,
         name=name,
@@ -209,7 +204,6 @@ def atoms2system(atoms, username=None, name=None, topology=None, magnetic_moment
         pbc_c=pbc[2],
         atoms=dbatoms,
 	magnetic_moment=magnetic_moment,
-	_vibrations=vibrations
         )
 
     # add the notes to the system instance
@@ -217,9 +211,14 @@ def atoms2system(atoms, username=None, name=None, topology=None, magnetic_moment
         for key, value in notes.items():
             system[key] = value
 
-    # if the calculation was done extract the forces and energies
+    # if the calculation was done extract the energy
     if atoms.get_calculator() is not None:
         system.energy = atoms.get_potential_energy()
+
+    # add vibrations, if present
+    if len(vibenergies) > 0:
+	vibrations = [Vibration(energy_real=r, energy_imag=i) for (r, i) in zip(vibenergies.real, vibenergies.imag)]
+	system._vibrations = vibrations	
 
     return system
 
