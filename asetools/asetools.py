@@ -364,6 +364,8 @@ def set_init_magmoms_from_indxs(atoms, indxs):
     atoms.set_initial_magnetic_moments(new_magmoms)
 
 def get_magnetization(logfile):
+        #Adapted from ase-espresso interface written by Johannes Voss
+        #https://github.com/vossjo/ase-espresso/wiki
 	'''
         Returns total and absolute magnetization after SCF run.
         Units are Bohr magnetons per unit cell, directly read from PWscf log.

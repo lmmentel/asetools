@@ -62,7 +62,7 @@ def get_table(tablename,  dbpath, **kwargs):
         Pandas DataFrame with the contents of the table
     '''
 
-    tables = ['systems', 'calculators', 'asetempaltes', 'jobs', 'atoms',
+    tables = ['systems', 'calculators', 'asetemplates', 'jobs', 'atoms',
               'vibrations']
 
     if tablename in tables:
