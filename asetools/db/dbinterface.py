@@ -154,7 +154,10 @@ def atoms2db(atoms):
     inimagm = atoms.get_initial_magnetic_moments()
     inichar = atoms.get_initial_charges()
     if atoms.get_calculator() is not None:
-        forces = atoms.get_forces()
+        try:
+            forces = atoms.get_forces()
+        except:
+            forces = [[None]*3 for _ in range(len(atoms))]
     else:
         forces = [[None]*3 for _ in range(len(atoms))]
 
