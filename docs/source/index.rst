@@ -92,6 +92,7 @@ Contents:
    :maxdepth: 2
 
    Module reference <_reference/modules>
+   DB guidelines <dbguidelines>
 
 
 Indices and tables
