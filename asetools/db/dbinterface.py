@@ -28,9 +28,9 @@ def get_session(dbpath, echo=False):
     db_session =  sessionmaker(bind=engine, autoflush=False, autocommit=False)
     return db_session()
 
-def get_pgsession(passwd=''):
+def get_pgsession(passwd='', dbapi='psycopg2'):
 
-    engine = create_engine('postgresql+psycopg2://smn_kvantekjemi_test_user:{}@dbpg-hotel-utv.uio.no/smn_kvantekjemi_test'.format(passwd))
+    engine = create_engine('postgresql+{0:s}://smn_kvantekjemi_test_user:{1:s}@dbpg-hotel-utv.uio.no/smn_kvantekjemi_test'.format(dbapi, passwd))
     db_session =  sessionmaker(bind=engine, autoflush=False, autocommit=False)
     return db_session()
 
