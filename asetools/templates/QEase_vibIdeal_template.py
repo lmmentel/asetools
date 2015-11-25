@@ -7,9 +7,6 @@ import os,pickle
 from ase.parallel import rank
 from asetools import set_init_magmoms
 
-T = 298.15
-p = 101325
-
 atoms = read('$input')
 elecenergy = atoms.get_potential_energy()
 set_init_magmoms(atoms,[$magmoms])
@@ -44,7 +41,3 @@ if rank == 0:
 # Make trajectory files to visualize normal modes:
    for mode in range(len(indices)*3):
         vib.write_mode(mode)
-# Do calculation of thermochemistry
-   thermo = IdealGasThermo(vibenergies,'nonlinear',elecenergy,atoms,symmetrynumber=1,spin=0) #NB: correct if molecule is linear or has higher symmetry!
-   print '\nPrinciple moments of inertia (amu*angstroms**2): %s\n' % rotationalinertia(atoms)
-   thermo.get_free_energy(T,p)
