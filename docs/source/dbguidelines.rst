@@ -42,15 +42,12 @@ You can also get the database ``engine`` with :py:func:`get_pgengine`::
 where ``password`` is the actual password for the databse.
 
 
-Best practices when adding data to the central database
-=======================================================
+Best practices when adding data to the database
+===============================================
 
 Although there is a extensive flexibility when adding data, all users will
-benefit from a certain structure, in particular in nomenclature. This document
+benefit from a certain structure, in particular in nomenclature. The following
 is an attempt to approach a standard.
-
-
-
 
 System
 -------
@@ -63,7 +60,7 @@ System.name : str
         - larger structures: IUPAC nomenclature or trivial names, like isobutene or phenol.
 
     *Zeotype structures*:
-        Construct the name by fragments relating to the framework, extra-framework ion(s) and adsorbate(s) respectively. E.g. '1Al-AFI-Ni1-ethene-H_nonagostic' to name nonagostically bound [Ni-ethene-H]+ charge-balanced by one Al atom in SSZ-24 zeolite.
+        Construct the name by fragments relating to the framework-substituted atom, the framework, extra-framework ion(s) and adsorbate(s) respectively. E.g. '1Al-AFI-Ni1-ethene-H_nonagostic' to name nonagostically bound [Ni-ethene-H]+ charge-balanced by one Al atom in SSZ-24 zeolite.
 
     *Transition states*:
         Use '_2_' notation, e.g. '1Al-AFI-CH3-ethene_2_propylium'.
@@ -83,8 +80,8 @@ System.notes : dict
         parameters employed in thermochemistry (see: ase.thermochemistry_)
          'geometry'
             'linear' or 'nonlinear'
-         'rotational_symmetry_no'
-            any integer larger than 0
+         'symmetrynumber'
+            rotational symmetry number, any integer larger than 0.
          'point_group'
             Schoenflies point group (str)
     *Zeotypes and other crystalline structures*:
@@ -104,25 +101,29 @@ To come
 Job
 ---
 
-Job.name : str
-    Use comma-separated keywords, e.g. 'relax', 'relax,freq' or 'neb'.
+Job.name : str, as comma-separated keywords
+    - 'relax', structure relaxation.
+    - 'freq', frequency calculation.
+    - 'relax,freq', both of the above in the same job.
+    - 'neb', nudged elastic band calculation.
+    - other string, if the above are insufficient.
 
 Job.status : str
     - 'not_started'
     - 'finished'
     - 'failed'
-    - other value, if the above are insufficient
+    - other string, if the above are insufficient.
 
 Job.inpname : str
     The name of the file that is passed to python when the job is executed, e.g. input.py.
 
 Job.outname : str
-    - for 'relax' jobs: name of trajectory file
-    - for 'freq' jobs: name of pickle file with vibrational energies
-    - for 'neb' jobs: comma-separated list of trajectory files along the band
+    - for 'relax' jobs: name of trajectory file.
+    - for 'freq' jobs: name of pickle file with vibrational energies.
+    - for 'neb' jobs: comma-separated list of trajectory files along the band.
 
 Job.hostname : str
-    Of the form 'abel.uio.no'
+    Of the form 'abel.uio.no'.
 
 DBTemplate
 ----------
@@ -132,7 +133,6 @@ DBTemplate.name : str
 
 DBTemplate.ase_version : str
     Use ase.version.version, not mandatory.
-
 
 
 .. _PostgreSQL: http://www.postgresql.org/
