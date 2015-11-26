@@ -67,5 +67,5 @@ setup(
     long_description = open("README.md", "r").read(),
     name = "asetools",
     url = "www.bitbucket.org/lukaszmentel/asetools",
-    version = "0.1.2",
+    version = "0.1.3",
 )
