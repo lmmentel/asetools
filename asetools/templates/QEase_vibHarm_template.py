@@ -1,4 +1,3 @@
-#!/bin/env python
 import numpy as np
 from ase.io import read
 from ase.vibrations import Vibrations
