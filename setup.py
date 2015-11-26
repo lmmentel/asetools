@@ -63,12 +63,6 @@ setup(
         'scripts/writeqespec',
     ],
     description = "convenience scripts for ASE",
-    install_requires = [
-        #"ase",
-        'numpy',
-        'scipy',
-        'pandas',
-    ],
     license = open("LICENSE.txt", "r").read(),
     long_description = open("README.md", "r").read(),
     name = "asetools",
