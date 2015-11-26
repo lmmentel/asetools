@@ -265,7 +265,9 @@ class Job(Base):
     id = Column(Integer, primary_key=True)
     system_id = Column(Integer, ForeignKey('systems.id'))
     name = Column(String)
+    username = Column(String)
     hostname = Column(String)
+    jobscript = Column(String)
     abspath = Column(String)
     inpname = Column(String)
     outname = Column(String)
@@ -314,13 +316,46 @@ class Vibration(Base):
     __tablename__ = 'vibrations'
 
     id = Column(Integer, primary_key=True)
-    system_id = Column(Integer, ForeignKey('systems.id'), nullable=False)
     energy_real = Column(Float, nullable=False)
     energy_imag = Column(Float, nullable=False)
+    vibrationset_id = Column(Integer, ForeignKey('vibrationsets.id'), nullable=False)
 
     def __repr__(self):
-        return "<Vibration(energy_real={0:15.8f}, energy_imag={1:15.8f})>".format(
-                self.energy_real, self.energy_imag)
+        return "<Vibration(vibrationset_id={0:d}, energy_real={1:15.8f}, energy_imag={2:15.8f})>".format(
+                self.vibrationset_id, self.energy_real, self.energy_imag)
+
+class VibrationSet(Base):
+
+    __tablename__ = 'vibrationsets'
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    atom_ids = Column(String)
+
+    system_id = Column(Integer, ForeignKey('systems.id'), nullable=False)
+
+    vibrations = relationship('Vibration', cascade="all, delete-orphan")
+
+    @hybrid_property
+    def atom_indices(self):
+        'Return a list of atom indices that were used for calculating vibrations'
+
+        if self.atom_ids is not None:
+            return np.array(self.atom_ids.split(','), dtype=np.int32)
+
+    @hybrid_property
+    def vibenergies(self):
+        '''Return a numpy array with the vibration energies'''
+
+        values = [v.energy_real + 1j*v.energy_imag for v in self.vibrations]
+        if len(values) > 0:
+            return np.asarray(values, dtype=np.complex128)
+        else:
+            return None
+
+    def __repr__(self):
+        return "<VibrationSet(id={0:d}, name={1:s}, system_id={2:d}, atom_ids={3:s})>".format(
+                self.id, self.name, self.system_id, self.atom_ids)
 
 class SystemNote(PolymorphicVerticalProperty, Base):
     '''class to handle storing key-value pairs for the system'''
@@ -361,11 +396,12 @@ class System(ProxiedDictMixin, Base):
 
     ctime = Column(DateTime, default=datetime.datetime.now)
     mtime = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
-    username = Column(String)
 
     name = Column(String)
     topology = Column(String)
     formula = Column(String)
+
+    articledoi = Column(String)
 
     cell_a = Column(Float)
     cell_b = Column(Float)
@@ -394,7 +430,7 @@ class System(ProxiedDictMixin, Base):
 
     atoms = relationship('DBAtom', cascade="all, delete-orphan")
 
-    _vibrations = relationship('Vibration', cascade="all, delete-orphan")
+    vibrationsets = relationship('VibrationSet', cascade="all, delete-orphan")
 
 
     notes = relationship('SystemNote',
@@ -405,15 +441,6 @@ class System(ProxiedDictMixin, Base):
                         creator=
                         lambda key, value: SystemNote(key=key, value=value))
 
-    @hybrid_property
-    def vibenergies(self):
-        '''Return a numpy array with the vibration energies'''
-
-        values = [v.energy_real + 1j*v.energy_imag for v in self._vibrations]
-        if len(values) > 0:
-            return np.asarray(values, dtype=np.complex128)
-        else:
-            return None
 
     def __repr__(self):
         return "<System(name={0:s}, topology={1:s})>".format(self.name, self.topology)

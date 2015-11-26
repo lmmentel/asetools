@@ -9,13 +9,14 @@ import argparse
 import json
 import os
 import pandas as pd
+import pickle
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import numpy as np
 import ase.io
 from ase import Atoms
 from ase.lattice.spacegroup.cell import cellpar_to_cell, cell_to_cellpar
-from .model import Base, DBAtom, System, DBTemplate, DBCalculator,Vibration
+from .model import Base, DBAtom, System, DBTemplate, DBCalculator, Vibration, VibrationSet
 
 def get_session(dbpath, echo=False):
     '''Return the database session connection.'''
@@ -28,13 +29,13 @@ def get_session(dbpath, echo=False):
     db_session =  sessionmaker(bind=engine, autoflush=False, autocommit=False)
     return db_session()
 
-def get_pgsession(passwd='', dbapi='psycopg2'):
+def get_pgsession(passwd, dbapi='psycopg2'):
 
     engine = create_engine('postgresql+{0:s}://smn_kvantekjemi_test_user:{1:s}@dbpg-hotel-utv.uio.no/smn_kvantekjemi_test'.format(dbapi, passwd))
     db_session =  sessionmaker(bind=engine, autoflush=False, autocommit=False)
     return db_session()
 
-def get_pgengine(passwd=''):
+def get_pgengine(passwd):
 
     engine = create_engine('postgresql+psycopg2://smn_kvantekjemi_test_user:{}@dbpg-hotel-utv.uio.no/smn_kvantekjemi_test'.format(passwd))
     return engine
@@ -63,7 +64,7 @@ def get_table(tablename,  dbpath, **kwargs):
     '''
 
     tables = ['systems', 'calculators', 'asetemplates', 'jobs', 'atoms',
-              'vibrations']
+              'vibrations', 'vibrationsets']
 
     if tablename in tables:
         engine = get_engine(dbpath)
@@ -184,7 +185,13 @@ def atoms2db(atoms):
 
     return dbatoms
 
-def atoms2system(atoms, username=None, name=None, topology=None, magnetic_moment=None, vibenergies=[], notes=None):
+def atoms2system(atoms, name=None, topology=None, magnetic_moment=None,
+                 notes=None, vibrations=None, vibname=None, atom_ids=None,
+                 realonly=False):
+    '''
+    Instantiate a :py:class:`asetools.db.model.System` from `ase.Atoms` objects and
+    additional parameters
+    '''
 
     dbatoms = atoms2db(atoms)
 
@@ -192,7 +199,6 @@ def atoms2system(atoms, username=None, name=None, topology=None, magnetic_moment
     pbc = atoms.get_pbc()
 
     system = System(
-        username=username,
         name=name,
         topology=topology,
         formula=atoms.get_chemical_formula(),
@@ -219,11 +225,54 @@ def atoms2system(atoms, username=None, name=None, topology=None, magnetic_moment
         system.energy = atoms.get_potential_energy()
 
     # add vibrations, if present
-    if len(vibenergies) > 0:
-	vibrations = [Vibration(energy_real=r, energy_imag=i) for (r, i) in zip(vibenergies.real, vibenergies.imag)]
-	system._vibrations = vibrations	
+    if vibrations:
+        vibset = vibrations2db(vibrations, name=vibname, atom_ids=atom_ids, realonly=realonly)
+        system.vibrationsets = vibset
 
     return system
+
+def vibrations2db(vibrations, name=None, atom_ids=None, system_id=None, realonly=False):
+    '''
+    Instantiate the :py:class:`asetools.db.model.VibrationSet` from a numpy
+    array containing vibrational energy of a pickle file with such an array
+    and return.
+
+    Args:
+      vibrations: numpy.ndarray or str
+        numpy.ndarray of type numpy.complex128 with vibrational energies or
+        the name of the pickle file with such an array
+      name : str
+        Name of the set of vibrations
+      atom_ids : str
+        Comma separated atom ids for which the vibrations were calculated
+      system_id : int
+        Integer identifier of the system. If VibrationSet will be attached
+        to a system this will be automatically filled by sqlalchemy
+      realonly : bool
+        If True only the real part of vibrational energies should be passed
+        in vibrations
+
+    Returns:
+      out : asetools.db.model.VibrationSet
+    '''
+
+    if isinstance(vibrations, np.ndarray):
+        if vibrations.dtype == np.complex and not realonly:
+	        viblist = [Vibration(energy_real=r, energy_imag=i) for (r, i) in zip(vibrations.real, vibrations.imag)]
+        elif realonly:
+	        viblist = [Vibration(energy_real=r, energy_imag=i) for (r, i) in zip(vibrations, np.zeros_like(vibrations))]
+    elif isinstance(vibrations, (str, unicode)):
+        with open(vibrations, 'r') as fvib:
+            array = pickle.load(fvib)
+	    viblist = [Vibration(energy_real=r, energy_imag=i) for (r, i) in zip(array.real, array.imag)]
+    else:
+        raise ValueError('<vibrations> should be either <str> or <numpy.ndarray> type, got: {}'.format(type(vibrations)))
+
+    vibset = VibrationSet(name=name, atom_ids=atom_ids, system_id=system_id)
+    vibset.vibrations = viblist
+
+    return vibset
+
 
 def calculator2db(calc, attrs='basic', description=None):
     '''
@@ -314,11 +363,8 @@ def from_traj(session, traj, name, topology, notes, calcid=None, tempid=None):
         DBTemplate id from the db
     '''
 
-    user = os.getenv('USER')
-
     atoms = ase.io.read(traj)
-    system = atoms2system(atoms, username=user, name=name, topology=topology,
-            notes=notes)
+    system = atoms2system(atoms, name=name, topology=topology, notes=notes)
 
     if calcid:
         system.calculator = session.query(DBCalculator).get(calcid)
