@@ -1,71 +1,141 @@
+Accessing the database
+======================
+
+The database is called `smn_kvantekjemi_test`. It is hosted at `dbpg-hotel-utv.uio.no`
+and currently is only accessible from `abel.uio.no`.
+
+Direct access
+-------------
+
+.. warning::
+
+   This access method is discuraged unless you know **exactly** what you are
+   doing since it can corrupt the database schema or data.
+
+
+To connect to the PostgreSQL_ prompt, type
+
+.. code-block:: bash
+
+   $ psql -h dbpg-hotel-utv.uio.no -U smn_kvantekjemi_test_user smn_kvantekjemi_test
+
+you will then be asked for a password, and after prividing the prompt will show
+up.
+
+Python API
+----------
+
+The preferred method of accessing the database is through a Python_ interface
+layer based on SQLAlchemy_. To get the ``session`` object use the
+:py:func:`get_pgsession <asetools.db.get_pgsession>` function from the
+:py:mod:`asetools.db` module. The function requires the password as an argument
+and returns the ``session`` object::
+
+    >>> from asetools.db import get_pgesession
+    >>> session = get_pgsession('password')
+
+You can also get the database ``engine`` with :py:func:`get_pgengine`::
+
+    >>> from asetools.db import get_pgengine
+    >>> engine = get_pgengine('password')
+
+where ``password`` is the actual password for the databse.
+
+
 Best practices when adding data to the central database
 =======================================================
 
-Although there is a extensive flexibility when adding data, all users will benefit from a certain structure, in particular in nomenclature. This document is an attempt to approach a standard.
-
-System.name
------------
-For zeotype structures:
-Construct the name by fragments relating to the framework, extrametal ion(s) and adsorbate(s) respectively, e.g.
-
-Al-AFI-Ni1-ethene-H_nonagostic
-
-to name nonagostically bound [Ni-ethene-H]+ in SSZ-24 zeolite, charge-balanced by one Al atom.
-
-For molecules:
-- di- and tri-atomics: sum formula
-- larger structures: IUPAC nomenclature or trivial names, like isobutene or phenol
-
-System.magnetic_moment
-----------------------
-Use the total magnetic moment in Bohr magneton per cell. A triplet state (2S+1=3), would have total magnetic moment 2.
-
-System.topology
----------------
-- molecules: molecule
-- zeolites: three-letter framework code
-
-System.notes
-------------
-For molecules: define parameters employed in thermochemistry
-'geometry': str
-   'linear' or 'nonlinear'
-'rotational_symmetry_no': int
-    any integer larger than 0
-'point_group': str
-    Schoenflies point group
-
-For zeolites and other crystalline structures:
-'space_group': str
-    the crystallographic symmetry group
+Although there is a extensive flexibility when adding data, all users will
+benefit from a certain structure, in particular in nomenclature. This document
+is an attempt to approach a standard.
 
 
 
-Job.name
---------
-Use comma-separated keywords, e.g. 
-- 'relax'
-- 'relax,freq'
 
-Job.status
+System
+-------
+
+System.name : str
+    *Molecules*:
+        construct the shortest name
+
+        - di- and tri-atomics: sum formula.
+        - larger structures: IUPAC nomenclature or trivial names, like isobutene or phenol.
+
+    *Zeotype structures*:
+        Construct the name by fragments relating to the framework, extra-framework ion(s) and adsorbate(s) respectively. E.g. '1Al-AFI-Ni1-ethene-H_nonagostic' to name nonagostically bound [Ni-ethene-H]+ charge-balanced by one Al atom in SSZ-24 zeolite.
+
+    *Transition states*:
+        Use '_2_' notation, e.g. '1Al-AFI-CH3-ethene_2_propylium'.
+
+System.magnetic_moment : float
+    Use the total magnetic moment in Bohr magneton per cell. A triplet state
+    (2S+1=3), would have total magnetic moment 2.
+
+System.topology : str
+    Toplology of the system
+
+    - *Molecules*: 'molecule'
+    - *Zeotype structures*: three-letter framework code (str)
+
+System.notes : dict
+    *Molecules*:
+        parameters employed in thermochemistry (see: ase.thermochemistry_)
+         'geometry'
+            'linear' or 'nonlinear'
+         'rotational_symmetry_no'
+            any integer larger than 0
+         'point_group'
+            Schoenflies point group (str)
+    *Zeotypes and other crystalline structures*:
+        similar information, e.g.
+         'space_group'
+            the crystallographic symmetry group (str)
+    *Other supplementary information*
+        key-value pairs where values can be: :class:`int`, :class:`float`,
+        :class:`str`, :class:`bool`
+
+
+Vibrations
 ----------
-Use any of the following
-- 'not_started'
-- 'finished'
-- 'failed'
-- other value, if the above are insufficient
+To come
 
-Job.inpname
------------
-The name of the file that is passed to python when the job is executed
 
-Job.outname
------------
-- 'relax' jobs: name of trajectory file
-- 'freq' jobs: name of pickle file with vibrational energies
-- ...
+Job
+---
 
-Job.hostname
-------------
-Of the form 'abel.uio.no'
+Job.name : str
+    Use comma-separated keywords, e.g. 'relax', 'relax,freq' or 'neb'.
 
+Job.status : str
+    - 'not_started'
+    - 'finished'
+    - 'failed'
+    - other value, if the above are insufficient
+
+Job.inpname : str
+    The name of the file that is passed to python when the job is executed, e.g. input.py.
+
+Job.outname : str
+    - for 'relax' jobs: name of trajectory file
+    - for 'freq' jobs: name of pickle file with vibrational energies
+    - for 'neb' jobs: comma-separated list of trajectory files along the band
+
+Job.hostname : str
+    Of the form 'abel.uio.no'
+
+DBTemplate
+----------
+
+DBTemplate.name : str
+    Use comma-separated keywords, e.g. 'relax', 'relax,freq', 'freq,harmonic_thermo', etc.
+
+DBTemplate.ase_version : str
+    Use ase.version.version, not mandatory.
+
+
+
+.. _PostgreSQL: http://www.postgresql.org/
+.. _Python: https://www.python.org/
+.. _SQLAlchemy: http://www.sqlalchemy.org/
+.. _ase.thermochemistry: https://wiki.fysik.dtu.dk/ase/ase/thermochemistry/thermochemistry.html#module-ase.thermochemistry

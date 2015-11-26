@@ -6,6 +6,14 @@
 Welcome to asetools's documentation!
 ====================================
 
+Contents:
+---------
+.. toctree::
+   :maxdepth: 2
+
+   Module reference <_reference/modules>
+      DB guidelines <dbguidelines>
+
 Templates
 ---------
 
@@ -72,15 +80,6 @@ Scripts
 - translate_cell
 - writecif
 - writeqespec
-
-Contents:
-
-.. toctree::
-   :maxdepth: 2
-
-   Module reference <_reference/modules>
-   DB guidelines <dbguidelines>
-
 
 Indices and tables
 ==================
