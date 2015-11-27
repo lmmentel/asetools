@@ -1,4 +1,3 @@
-#Template input for a single point energy calculation with Quantum Espresso
 from ase.io import write,read
 from espresso import espresso
 from asetools import set_init_magmoms
