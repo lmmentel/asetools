@@ -57,7 +57,6 @@ setup(
         'scripts/runNCIplot',
         'scripts/runQE',
         'scripts/run_gencube',
-        'scripts/sub_runRPBE',
         'scripts/translate_cell',
         'scripts/writecif',
         'scripts/writeqespec',
