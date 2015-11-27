@@ -1,5 +1,3 @@
-#!/usr/local/bin/python2.7
-#Template input for a structure relaxation with Quantum Espresso
 from ase.io import read
 from ase.optimize import BFGS
 from espresso import espresso
