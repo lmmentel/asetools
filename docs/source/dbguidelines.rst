@@ -52,7 +52,7 @@ is an attempt to approach a standard.
 System
 -------
 
-System.name : str
+System.name : :class:`str`
     *Molecules*:
         construct the shortest name
 
@@ -65,29 +65,29 @@ System.name : str
     *Transition states*:
         Use '_2_' notation, e.g. '1Al-AFI-CH3-ethene_2_propylium'.
 
-System.magnetic_moment : float
+System.magnetic_moment : :class:`float`
     Use the total magnetic moment in Bohr magneton per cell. A triplet state
     (2S+1=3), would have total magnetic moment 2.
 
-System.topology : str
+System.topology : :class:`str`
     Toplology of the system
 
     - *Molecules*: 'molecule'
-    - *Zeotype structures*: three-letter framework code (str)
+    - *Zeotype structures*: three-letter framework code
 
-System.notes : dict
+System.notes : :class:`dict`
     *Molecules*:
         parameters employed in thermochemistry (see: ase.thermochemistry_)
-         'geometry'
+         'geometry' : :class:`str`
             'linear' or 'nonlinear'
-         'symmetrynumber'
-            rotational symmetry number, any integer larger than 0.
-         'point_group'
-            Schoenflies point group (str)
+         'symmetrynumber' : :class:`int`
+            rotational symmetry number, larger than 0.
+         'point_group' : :class:`str`
+            Schoenflies point group
     *Zeotypes and other crystalline structures*:
         similar information, e.g.
-         'space_group'
-            the crystallographic symmetry group (str)
+         'space_group' : :class:`str`
+            the crystallographic symmetry group
     *Other supplementary information*
         key-value pairs where values can be: :class:`int`, :class:`float`,
         :class:`str`, :class:`bool`
@@ -101,37 +101,37 @@ To come
 Job
 ---
 
-Job.name : str, as comma-separated keywords
+Job.name : :class:`str`, as comma-separated keywords
     - 'relax', structure relaxation.
     - 'freq', frequency calculation.
     - 'relax,freq', both of the above in the same job.
     - 'neb', nudged elastic band calculation.
     - other string, if the above are insufficient.
 
-Job.status : str
+Job.status : :class:`str`
     - 'not_started'
     - 'finished'
     - 'failed'
     - other string, if the above are insufficient.
 
-Job.inpname : str
+Job.inpname : :class:`str`
     The name of the file that is passed to python when the job is executed, e.g. input.py.
 
-Job.outname : str
+Job.outname : :class:`str`
     - for 'relax' jobs: name of trajectory file.
     - for 'freq' jobs: name of pickle file with vibrational energies.
     - for 'neb' jobs: comma-separated list of trajectory files along the band.
 
-Job.hostname : str
+Job.hostname : :class:`str`
     Of the form 'abel.uio.no'.
 
 DBTemplate
 ----------
 
-DBTemplate.name : str
+DBTemplate.name : :class:`str`
     Use comma-separated keywords, e.g. 'relax', 'relax,freq', 'freq,harmonic_thermo', etc.
 
-DBTemplate.ase_version : str
+DBTemplate.ase_version : :class:`str`
     Use ase.version.version, not mandatory.
 
 
