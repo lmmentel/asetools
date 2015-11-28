@@ -414,15 +414,18 @@ def create_single_job(workdir, atoms, template, subs, jobname='input.py',
 
     '''
 
-    os.mkdir(workdir)
+    curdir = os.getcwd()
+    if not os.path.isdir(workdir):
+	os.makedirs(workdir)
     os.chdir(workdir)
-    ase.io.write(subs['atoms'], atoms)
+    if atoms:	
+    	ase.io.write(subs['atoms'], atoms)
     t = AseTemplate(template)
     t.render_and_write(subs, output=jobname)
     #if submitargs:
     #    submitargs.insert(0, jobname)
-    #    submit.main(submitargs)
-    os.chdir('..')
+    #    submit(submitargs)
+    os.chdir(curdir)
 
 def find_closest(atoms, reference, symbol=None, n=1):
     '''

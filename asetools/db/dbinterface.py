@@ -186,7 +186,7 @@ def atoms2db(atoms):
     return dbatoms
 
 def atoms2system(atoms, name=None, topology=None, magnetic_moment=None,
-                 notes=None, vibrations=None, vibname=None, atom_ids=None,
+                 notes=None, vibrations=[], vibname=None, atom_ids=None,
                  realonly=False):
     '''
     Instantiate a :py:class:`asetools.db.model.System` from `ase.Atoms` objects and
@@ -225,9 +225,9 @@ def atoms2system(atoms, name=None, topology=None, magnetic_moment=None,
         system.energy = atoms.get_potential_energy()
 
     # add vibrations, if present
-    if vibrations:
+    if len(vibrations) > 0:
         vibset = vibrations2db(vibrations, name=vibname, atom_ids=atom_ids, realonly=realonly)
-        system.vibrationsets = vibset
+        system.vibrationsets = [vibset]
 
     return system
 
