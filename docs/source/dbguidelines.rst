@@ -73,7 +73,7 @@ System.topology : :class:`str`
     Toplology of the system
 
     - *Molecules*: 'molecule'
-    - *Zeotype structures*: three-letter framework code
+    - *Zeotype structures*: three-letter framework code approved by IZA-SC_.
 
 System.notes : :class:`dict`
     *Molecules*:
@@ -81,7 +81,7 @@ System.notes : :class:`dict`
          'geometry' : :class:`str`
             'linear' or 'nonlinear'
          'symmetrynumber' : :class:`int`
-            rotational symmetry number, larger than 0.
+            rotational symmetry number.
          'point_group' : :class:`str`
             Schoenflies point group
     *Zeotypes and other crystalline structures*:
@@ -93,9 +93,16 @@ System.notes : :class:`dict`
         :class:`str`, :class:`bool`
 
 
-Vibrations
+VibrationSet
 ----------
-To come
+
+VibrationSet.name : :class:`str`
+    - 'FHVA', full harmonic vibrational analysis including all atoms in the molecular or crystalline structure.
+    - 'PHVA', partial harmonic vibrational analysis including atoms defined by VibrationSet.atom_ids.
+    - 'FAVA', anharmonic vibrational analysis.
+
+VibrationSet.atom_ids : :class:`str`
+    Comma-separated indices of the atoms (in the associated Atoms object) included in the vibrations.
 
 
 Job
@@ -129,7 +136,7 @@ DBTemplate
 ----------
 
 DBTemplate.name : :class:`str`
-    Use comma-separated keywords, e.g. 'relax', 'relax,freq', 'freq,harmonic_thermo', etc.
+    Use comma-separated keywords, e.g. 'relax', 'relax,freq', 'freq,harmonic-thermo', etc.
 
 DBTemplate.ase_version : :class:`str`
     Use ase.version.version, not mandatory.
@@ -139,3 +146,4 @@ DBTemplate.ase_version : :class:`str`
 .. _Python: https://www.python.org/
 .. _SQLAlchemy: http://www.sqlalchemy.org/
 .. _ase.thermochemistry: https://wiki.fysik.dtu.dk/ase/ase/thermochemistry/thermochemistry.html#module-ase.thermochemistry
+.. _IZA-SC: http://www.iza-structure.org/databases/
