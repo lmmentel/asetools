@@ -15,42 +15,45 @@
 import sys
 import os
 import shlex
+import sphinx_rtd_theme
+import inspect
+from sphinx import apidoc
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #sys.path.insert(0, os.path.abspath('.'))
-#
-# in python >= 3.3
-#from unittest.mock import MagicMock
-from mock import Mock as MagicMock
 
-import sphinx_rtd_theme
-import inspect
-from sphinx import apidoc
+if sys.version_info.major == 3:
+    from unittest.mock import MagicMock    # if python ver >= 3.3
+else:
+    from mock import Mock as MagicMock     # if python ver 2.7
+
 
 class Mock(MagicMock):
     @classmethod
     def __getattr__(cls, name):
         return Mock()
 
-MOCK_MODULES = ['argparse', 'numpy', 'scipy', 'scipy.optimize', 'scipy.constants', 'scipy.constants.value', 'pandas',
-    'sqlalchemy', 'sqlalchemy.orm', 'sqlalchemy.orm.collections', 'sqlalchemy.orm.interfaces', 'sqlalchemy.ext', 'sqlalchemy.ext.associationproxy',
-    'sqlalchemy.ext.declarative', 'sqlalchemy.ext.hybrid', 'mendeleev', 'ase', 'ase.io', 'ase.io.cif']
-sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
+MOCK_MODULES = ['argparse', 'numpy', 'scipy', 'scipy.optimize', 'scipy.constants',
+                'scipy.constants.value', 'pandas', 'mendeleev', 'ase', 'ase.io',
+                'ase.io.cif', 'ase.lattice', 'ase.lattice.spacegroup',
+                'ase.lattice.spacegroup.cell']
 
-on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
-if on_rtd:
-    html_theme = 'default'
-else:
-    pass
-    sys.path.append('/home/lmentel/Devel/asetools')
+sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
 __location__ = os.path.join(os.getcwd(), os.path.dirname(
     inspect.getfile(inspect.currentframe())))
 
 output_dir = os.path.join(__location__, "_reference")
 module_dir = os.path.join(__location__, "../../asetools")
+
+on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
+if on_rtd:
+    html_theme = 'default'
+else:
+    sys.path.append(os.path.dirname(os.path.normpath(module_dir)))
+
 cmd_line_template = "sphinx-apidoc -f --separate -o {outputdir} {moduledir}"
 cmd_line = cmd_line_template.format(outputdir=output_dir, moduledir=module_dir)
 apidoc.main(cmd_line.split(" "))

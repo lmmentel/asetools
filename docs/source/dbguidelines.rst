@@ -1,11 +1,14 @@
+Working with the database
+=========================
+
 Accessing the database
-======================
+----------------------
 
 The database is called `smn_kvantekjemi_test`. It is hosted at `dbpg-hotel-utv.uio.no`
 and currently is only accessible from `abel.uio.no`.
 
 Direct access
--------------
+^^^^^^^^^^^^^
 
 .. warning::
 
@@ -23,7 +26,7 @@ you will then be asked for a password, and after prividing the prompt will show
 up.
 
 Python API
-----------
+^^^^^^^^^^
 
 The preferred method of accessing the database is through a Python_ interface
 layer based on SQLAlchemy_. To get the ``session`` object use the
@@ -43,14 +46,14 @@ where ``password`` is the actual password for the databse.
 
 
 Best practices when adding data to the database
-===============================================
+-----------------------------------------------
 
 Although there is a extensive flexibility when adding data, all users will
 benefit from a certain structure, in particular in nomenclature. The following
 is an attempt to approach a standard.
 
 System
--------
+^^^^^^
 
 System.name : :class:`str`
     *Molecules*:
@@ -94,7 +97,7 @@ System.notes : :class:`dict`
 
 
 VibrationSet
-----------
+^^^^^^^^^^^^
 
 VibrationSet.name : :class:`str`
     - 'FHVA', full harmonic vibrational analysis including all atoms in the molecular or crystalline structure.
@@ -106,7 +109,7 @@ VibrationSet.atom_ids : :class:`str`
 
 
 Job
----
+^^^
 
 Job.name : :class:`str`, as comma-separated keywords
     - 'relax', structure relaxation.
@@ -133,7 +136,7 @@ Job.hostname : :class:`str`
     Of the form 'abel.uio.no'.
 
 DBTemplate
-----------
+^^^^^^^^^^
 
 DBTemplate.name : :class:`str`
     Use comma-separated keywords, e.g. 'relax', 'relax,freq', 'freq,harmonic-thermo', etc.

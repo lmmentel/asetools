@@ -9,10 +9,10 @@ Welcome to asetools's documentation!
 Contents:
 ---------
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
-   Module reference <_reference/modules>
-      DB guidelines <dbguidelines>
+   DB guidelines <dbguidelines>
+   API reference <_reference/modules>
 
 Templates
 ---------
