@@ -120,8 +120,9 @@ Job.name : :class:`str`, as comma-separated keywords
 
 Job.status : :class:`str`
     - 'not_started'
-    - 'finished'
     - 'failed'
+    - 'finished'
+    - 'TSfinished': if a TS was converged, but the entire band of the 'neb' job did not. 
     - other string, if the above are insufficient.
 
 Job.inpname : :class:`str`
