@@ -19,7 +19,17 @@ from ase.lattice.spacegroup.cell import cellpar_to_cell, cell_to_cellpar
 from .model import Base, DBAtom, System, DBTemplate, DBCalculator, Vibration, VibrationSet
 
 def get_session(dbpath, echo=False):
-    '''Return the database session connection.'''
+    '''
+    Return the database session connection for the sqlite3 database
+
+    Args:
+      dbpath : str
+        Path to the database file
+
+    Returns:
+      session :
+        Session instance
+    '''
 
     if os.path.exists(dbpath):
         engine = create_engine("sqlite:///{path:s}".format(path=dbpath), echo=echo)
@@ -30,12 +40,34 @@ def get_session(dbpath, echo=False):
     return db_session()
 
 def get_pgsession(passwd, dbapi='psycopg2'):
+    '''
+    Get the database engine for the postgresql
+
+    Args:
+      passwd : str
+        Password
+
+    Returns:
+      session :
+        Session instance
+    '''
 
     engine = create_engine('postgresql+{0:s}://smn_kvantekjemi_test_user:{1:s}@dbpg-hotel-utv.uio.no/smn_kvantekjemi_test'.format(dbapi, passwd))
     db_session =  sessionmaker(bind=engine, autoflush=False, autocommit=False)
     return db_session()
 
 def get_pgengine(passwd):
+    '''
+    Get the database engine from the postgresql
+
+    Args:
+      passwd : str
+        Password
+
+    Returns:
+      engine :
+        Database engine
+    '''
 
     engine = create_engine('postgresql+psycopg2://smn_kvantekjemi_test_user:{}@dbpg-hotel-utv.uio.no/smn_kvantekjemi_test'.format(passwd))
     return engine
@@ -148,7 +180,17 @@ def get_template(session, ids):
     return q.template
 
 def atoms2db(atoms):
-    'Convert `ase.Atoms` object into a list of `asetools.DBAtom` objects and return'
+    '''
+    Convert `ase.Atoms <https://wiki.fysik.dtu.dk/ase/ase/atoms.html#module-ase.atoms>`_
+    object into a list of :py:class:`DBAtom <asetools.db.model.DBAtom>` objects and return
+
+    Args:
+      atoms : `ase.Atoms <https://wiki.fysik.dtu.dk/ase/ase/atoms.html#module-ase.atoms>`_
+        ASE atoms object
+
+    Returns:
+      dbatoms : :py:class:`DBAtom <asetools.db.model.DBAtom>`
+    '''
 
     dbatoms = []
 
@@ -233,9 +275,9 @@ def atoms2system(atoms, name=None, topology=None, magnetic_moment=None,
 
 def vibrations2db(vibrations, name=None, atom_ids=None, system_id=None, realonly=False):
     '''
-    Instantiate the :py:class:`asetools.db.model.VibrationSet` from a numpy
-    array containing vibrational energy of a pickle file with such an array
-    and return.
+    Instantiate the :py:class:` VibrationSet <asetools.db.model.VibrationSet>`
+    from a numpy array containing vibrational energies or a pickle file with
+    such an array and return.
 
     Args:
       vibrations: numpy.ndarray or str
@@ -253,7 +295,7 @@ def vibrations2db(vibrations, name=None, atom_ids=None, system_id=None, realonly
         in vibrations
 
     Returns:
-      out : asetools.db.model.VibrationSet
+      out : :py:class:`VibrationSet <asetools.db.model.VibrationSet>`
     '''
 
     if isinstance(vibrations, np.ndarray):
