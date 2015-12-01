@@ -22,4 +22,4 @@ def upgrade():
 
 def downgrade():
 
-    od.drop_column('systems', 'articledoi')
+    op.drop_column('systems', 'articledoi')

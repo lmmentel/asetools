@@ -416,6 +416,7 @@ class System(ProxiedDictMixin, Base):
     # results of the calculation
 
     energy = Column(Float)
+    enthalpy = Column(Float)
     internal_energy = Column(Float)
     entropy = Column(Float)
     free_energy = Column(Float)
