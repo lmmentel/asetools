@@ -378,8 +378,6 @@ class System(ProxiedDictMixin, Base):
     System ORM object
 
     Attributes:
-      username : str
-        Name of the user
       name : str
         Name of the system
       topology : str
