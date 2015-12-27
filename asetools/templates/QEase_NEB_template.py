@@ -17,8 +17,8 @@ calcs = multiespresso(ncalc=nimage,outdirprefix='neb',pw=$pw,dw=$dw,
     xc=$xc,kpts=$kpts,spinpol=$spinpol)
 
 images = [initial]
-for i in range(nimage):
-    image = read('NEB/neb%d.traj' % (i+1))
+for i in range(1,nimage+1):
+    image = read('NEB/neb{0}.traj'.format(i))
     set_init_magmoms(image,[$magmom])
     images.append(image)
 
@@ -31,7 +31,7 @@ calcs.set_neb(neb)
 qn = BFGS(neb, logfile='qn.log')
 
 for j in range(1,nimage+1):
-  traj = PickleTrajectory('neb%d.traj' % j, 'w', images[j])
+  traj = PickleTrajectory('neb{0}.traj'.format(j), 'w', images[j])
   qn.attach(traj)
 
 qn.run(fmax=$fmax)
