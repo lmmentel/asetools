@@ -14,12 +14,12 @@ write('initial.traj',initial)
 write('final.traj',final)
 
 calcs = multiespresso(ncalc=nimage,outdirprefix='neb',pw=$pw,dw=$dw,
-    xc=$xc,kpts=$kpts,spinpol=$spinpol)
+    xc='$xc',kpts=$kpts,spinpol=$spinpol)
 
 images = [initial]
 for i in range(1,nimage+1):
     image = read('NEB/neb{0}.traj'.format(i))
-    set_init_magmoms(image,[$magmom])
+    set_init_magmoms(image,[$magmoms])
     images.append(image)
 
 images.append(final)
