@@ -23,7 +23,7 @@ def main():
                         help='Name and (relative) path of input file. Default=startguess.traj')
     parser.add_argument('-o','--output',
 			default='dyn.traj',
-			help='Name and (relative) path of output file. Default=dn.traj')
+			help='Name and (relative) path of output file. Default=dyn.traj')
     parser.add_argument('--kpts',
                         default='\'gamma\'',
                         help='Definition of kpts spanning the Brillouin zone. Default=gamma (special qe trick compared to (1,1,1))')
@@ -54,6 +54,9 @@ def main():
     group2.add_argument('--opt',
                         action="store_true",
                         help='If true, run geometry optimization. Default: False (i.e single point).')
+    group2.add_argument('--cellopt',
+			action="store_true",
+			help='If true, run cell and geometry optimization. Default: False (i.e. single point).')
     parser.add_argument('--charge',
 			default=None,
 			help='Total charge of system. -1: one extra electron, 1: one electron missing, compared to neutral.')
@@ -160,11 +163,14 @@ def main():
 	   else:
 	      args['nativemode'] = 'scf'
     	else: #ase style
-           tname = 'QEase_template.py'
-	   if args['opt']:
-	     args['steps'] = 1e3
+	   if args['cellopt']:
+	      tname = 'QEase_cellopt_template.py'
 	   else:
-	     args['steps'] = 1
+              tname = 'QEase_template.py'
+	      if args['opt']:
+	         args['steps'] = 1e3
+	      else:
+	         args['steps'] = 1
 
     #write input file(s)
     inputstr = Template(get_template(tname)).substitute(args)
