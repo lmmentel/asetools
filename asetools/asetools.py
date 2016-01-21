@@ -16,6 +16,7 @@ eV2J = value('electron volt-joule relationship')
 Ry_to_eV = value('Rydberg constant times hc in eV')
 # inverse cm to eV relationship is m1_to_eV*100.0
 m1_to_eV = value('inverse meter-electron volt relationship')
+eV_to_m1 = value('electron volt-inverse meter relationship')
 
 class AseTemplate(Template):
     'A subclass of the string.Template with altered delimiter and extra methods'
