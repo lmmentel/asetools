@@ -440,7 +440,6 @@ class System(ProxiedDictMixin, Base):
                         creator=
                         lambda key, value: SystemNote(key=key, value=value))
 
-
     def __repr__(self):
         return "<System(name={0:s}, topology={1:s})>".format(self.name, self.topology)
 

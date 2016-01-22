@@ -115,6 +115,7 @@ Job.name : :class:`str`, as comma-separated keywords
     - 'relax', structure relaxation.
     - 'freq', frequency calculation.
     - 'relax,freq', both of the above in the same job.
+    - 'freq,thermo' for both frequency and thermochemistry calculation
     - 'neb', nudged elastic band calculation.
     - other string, if the above are insufficient.
 

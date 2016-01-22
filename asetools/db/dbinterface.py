@@ -8,8 +8,8 @@ from __future__ import print_function, division
 import argparse
 import json
 import os
-import pandas as pd
 import pickle
+import pandas as pd
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import numpy as np
@@ -36,7 +36,7 @@ def get_session(dbpath, echo=False):
     else:
         engine = create_engine("sqlite:///{path:s}".format(path=dbpath), echo=echo)
         Base.metadata.create_all(engine)
-    db_session =  sessionmaker(bind=engine, autoflush=False, autocommit=False)
+    db_session = sessionmaker(bind=engine, autoflush=False, autocommit=False)
     return db_session()
 
 def get_pgsession(passwd, dbapi='psycopg2'):
@@ -53,7 +53,7 @@ def get_pgsession(passwd, dbapi='psycopg2'):
     '''
 
     engine = create_engine('postgresql+{0:s}://smn_kvantekjemi_test_user:{1:s}@dbpg-hotel-utv.uio.no/smn_kvantekjemi_test'.format(dbapi, passwd))
-    db_session =  sessionmaker(bind=engine, autoflush=False, autocommit=False)
+    db_session = sessionmaker(bind=engine, autoflush=False, autocommit=False)
     return db_session()
 
 def get_pgengine(passwd):
@@ -78,7 +78,7 @@ def get_engine(dbpath):
     engine = create_engine("sqlite:///{path:s}".format(path=dbpath), echo=False)
     return engine
 
-def get_table(tablename,  dbpath, **kwargs):
+def get_table(tablename, dbpath, **kwargs):
     '''
     Return a table from the database as pandas DataFrame
 
@@ -138,7 +138,6 @@ def get_atoms(session, system_id):
     '''
 
     q = session.query(System).get(system_id)
-
     n = len(q.atoms)
 
     xyz = np.hstack((
@@ -172,6 +171,7 @@ def get_atoms(session, system_id):
     return atoms
 
 def get_template(session, ids):
+    'Return a template string based either on the id or name'
 
     if isinstance(ids, int):
         q = session.query(DBTemplate).get(ids)
@@ -254,7 +254,7 @@ def atoms2system(atoms, name=None, topology=None, magnetic_moment=None,
         pbc_b=pbc[1],
         pbc_c=pbc[2],
         atoms=dbatoms,
-	magnetic_moment=magnetic_moment,
+        magnetic_moment=magnetic_moment,
         )
 
     # add the notes to the system instance
@@ -300,13 +300,13 @@ def vibrations2db(vibrations, name=None, atom_ids=None, system_id=None, realonly
 
     if isinstance(vibrations, np.ndarray):
         if vibrations.dtype == np.complex and not realonly:
-	        viblist = [Vibration(energy_real=r, energy_imag=i) for (r, i) in zip(vibrations.real, vibrations.imag)]
+            viblist = [Vibration(energy_real=r, energy_imag=i) for (r, i) in zip(vibrations.real, vibrations.imag)]
         elif realonly:
-	        viblist = [Vibration(energy_real=r, energy_imag=i) for (r, i) in zip(vibrations, np.zeros_like(vibrations))]
+            viblist = [Vibration(energy_real=r, energy_imag=i) for (r, i) in zip(vibrations, np.zeros_like(vibrations))]
     elif isinstance(vibrations, (str, unicode)):
         with open(vibrations, 'r') as fvib:
             array = pickle.load(fvib)
-	    viblist = [Vibration(energy_real=r, energy_imag=i) for (r, i) in zip(array.real, array.imag)]
+        viblist = [Vibration(energy_real=r, energy_imag=i) for (r, i) in zip(array.real, array.imag)]
     else:
         raise ValueError('<vibrations> should be either <str> or <numpy.ndarray> type, got: {}'.format(type(vibrations)))
 
@@ -314,7 +314,6 @@ def vibrations2db(vibrations, name=None, atom_ids=None, system_id=None, realonly
     vibset.vibrations = viblist
 
     return vibset
-
 
 def calculator2db(calc, attrs='basic', description=None):
     '''
@@ -417,6 +416,9 @@ def from_traj(session, traj, name, topology, notes, calcid=None, tempid=None):
     session.commit()
 
 def add_system():
+    '''
+    Add a system to a SQLite3 database from a parsed trajectory file.
+    '''
 
     parser = argparse.ArgumentParser()
 
@@ -445,3 +447,95 @@ def add_system():
               topology=args.topology, notes=args.notes,
               calcid=args.calcid, tempid=args.calcid)
 
+
+def update_vibs(session, systems, jobname, vibfile='vibenergies.pkl',
+                vibname='PHVA', thermofile=None, T=298.15, verbose=False):
+    '''
+    Update frequencies and thermochemistry in the database for the `systems`
+    from the jobs `jobname`.
+
+    Args:
+        session : sqlalchemy.session
+            Session instance with the database connection
+        systems : asetools.db.model.System
+            List of systems
+        jobname : str
+            Name of the job for which the data in system should be updated
+        vibfile : str
+            Name of the file with the `ase.Vibrations` object
+        vibname : str
+            Name for the vibrations
+        thermofile : str
+            Name of the file with the Thermochemistry
+        T : float
+            Temperature for thermochemistry calculation
+    '''
+
+    for mol in systems:
+        job = next(j for j in mol.jobs if j.name == jobname)
+        job.jobscript = open(job.inppath, 'r').read()
+
+        if os.path.exists(os.path.join(job.abspath, vibfile)):
+            vibset = vibrations2db(os.path.join(job.abspath, vibfile), name=vibname)
+            mol.vibrationsets.append(vibset)
+
+        if thermofile is not None:
+            if os.path.exists(os.path.join(job.abspath, thermofile)):
+                with open(os.path.join(job.abspath, thermofile), 'r') as fthermo:
+                    thermo = pickle.load(fthermo)
+
+                thermoname = thermo.__class__.__name__
+                mol.thermo = thermoname + '@{:.2f}'.format(T)
+
+                if thermoname in ['HarmonicThermo', 'CrystalThermo']:
+                    mol.entropy = thermo.get_entropy(T, verbose=verbose)
+                    mol.internal_energy = thermo.get_internal_energy(T, verbose=verbose)
+                    mol.free_energy = thermo.get_helmholtz_energy(T, verbose=verbose)
+                elif thermoname == 'IdealGasThermo':
+                    mol.entropy = thermo.get_entropy(T, verbose=verbose)
+                    mol.enthalpy = thermo.get_enthalpy(T, verbose=verbose)
+                    mol.free_energy = thermo.get_gibbs_energy(T, verbose=verbose)
+                else:
+                    raise ValueError('Unknown thermoname: {}'.format(thermoname))
+
+        session.add(mol)
+        session.add(job)
+    session.commit()
+
+def update_geoms(session, systems, jobname):
+    '''
+    Update the database for the `systems` from the jobs `jobname`
+
+    Args:
+        session : sqlalchemy.session
+            Session instance with the database connection
+        systems : asetools.db.model.System
+            List of systems
+        jobname : str
+            Name of the job for which the data in system should be updated
+    '''
+
+    for mol in systems:
+        job = next(j for j in mol.jobs if j.name == jobname)
+        job.jobscript = open(job.inppath, 'r').read()
+
+        atoms = ase.io.read(str(job.outpath), format='traj')
+
+        dbatoms = atoms2db(atoms)
+        mol.atoms = dbatoms
+        cellpar = cell_to_cellpar(atoms.get_cell())
+        pbc = atoms.get_pbc()
+        mol.cell_a = cellpar[0]
+        mol.cell_b = cellpar[1]
+        mol.cell_c = cellpar[2]
+        mol.cell_alpha = cellpar[3]
+        mol.cell_beta = cellpar[4]
+        mol.cell_gamma = cellpar[5]
+        mol.pbc_a = bool(pbc[0])
+        mol.pbc_b = bool(pbc[1])
+        mol.pbc_c = bool(pbc[2])
+        mol.formula = atoms.get_chemical_formula()
+        mol.energy = atoms.get_potential_energy()
+        session.add(mol)
+        session.add(job)
+    session.commit()
