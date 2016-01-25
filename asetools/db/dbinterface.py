@@ -9,6 +9,7 @@ import argparse
 import json
 import os
 import pickle
+from string import maketrans
 import pandas as pd
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -16,7 +17,10 @@ import numpy as np
 import ase.io
 from ase import Atoms
 from ase.lattice.spacegroup.cell import cellpar_to_cell, cell_to_cellpar
-from .model import Base, DBAtom, System, DBTemplate, DBCalculator, Vibration, VibrationSet
+from .model import Base, DBAtom, System, DBTemplate, DBCalculator, Vibration, VibrationSet, Job
+
+from asetools import AseTemplate
+from asetools.submit import main as sub
 
 def get_session(dbpath, echo=False):
     '''
@@ -448,6 +452,65 @@ def add_system():
               calcid=args.calcid, tempid=args.calcid)
 
 
+
+def insert_jobs(session, systems, jobname, workdir, temp_id=None,
+                calc_id=None, hostname='abel.uio.no', streplace=None):
+    '''
+    Insert jobs into the database for specified ``systems``
+
+    Args:
+        session : sqlalchemy.session
+            Session instance with the database connection
+        systems : asetools.db.model.System
+            List of systems objects
+        jobname : str
+            Name of the job see docs
+        workdir : str
+            Path to the workdir
+        temp_no : int
+            Template ID
+        calc_no : int
+            Calculator ID
+        hostname : str
+            Name of the host
+        streplace : dict
+            Dictionary with characters to replace when creating a directory name from
+            the `System.name` attribute
+    '''
+
+    if streplace is None:
+        streplace = {'(' : '_', ')' : '_'}
+
+    rtable = maketrans(''.join(streplace.keys()), ''.join(streplace.values()))
+
+    inpname = jobname.strip().replace(',', '_') + '.py'
+
+    if jobname == 'relax':
+        outname = 'relaxed.traj'
+    elif jobname == 'freq':
+        outname = 'vibenergies.pkl'
+    elif jobname == 'thermo':
+        outname = 'thermo.pkl'
+    else:
+        outname = jobname.strip().replace(',', '_') + '.pkl'
+
+    for syst in systems:
+        djob = Job(
+            abspath=os.path.join(workdir, str(syst.name).translate(rtable)),
+            hostname=hostname,
+            inpname=inpname,
+            outname=outname,
+            name=jobname,
+            status='not started',
+            template_id=temp_id,
+            calculator_id=calc_id,
+            username=os.getenv('USER'),
+            )
+
+        syst.jobs.append(djob)
+        session.add(syst)
+    session.commit()
+
 def update_vibs(session, systems, jobname, vibfile='vibenergies.pkl',
                 vibname='PHVA', thermofile=None, T=298.15, verbose=False):
     '''
@@ -539,3 +602,74 @@ def update_geoms(session, systems, jobname):
         session.add(mol)
         session.add(job)
     session.commit()
+
+
+
+def write_jobs(systems, jobname, repl=None, submit=False, subargs=None):
+    '''
+    Render the template file into an input script for the job, write the file and
+    submit the job (if requested).
+
+    Args:
+        systems : asetools.db.model.System
+            A list of `System` objects
+        jobname : str
+            Name of the job to be created
+        repl : list of dicts
+            List/tuple of dictionaries with key, value pairs to be rendered
+            into the template, they will overwrite the values obtained from the
+            calculator specified in the job
+        submit : bool
+            A flag to specify whether to submit the job or not
+        subargs : list of strings
+            A list of arguments for the batch program used to submit the job
+    '''
+
+    if len(systems) != len(repl):
+        raise ValueError('len(systems) != len(repl), {0:d} != {1:d}'.format(len(systems), len(repl)))
+
+    for system, drepl in zip(systems, repl):
+        job = next(j for j in system.jobs if j.name == jobname)
+
+        atemp = AseTemplate(job.template.template)
+
+        # create a dictionary with replacements for the template by getting the
+        # matching values from the calculator attributes absed on keys from the
+        # template
+        d = {k: job.calculator[k] for k in atemp.get_keys()['named'] if k in job.calculator.attributes.keys()}
+
+        d.update(drepl)
+
+        # check if all the template keys have values before rendering the tempate
+
+        if len(atemp.get_keys()['named']) == len(d.keys()):
+
+            job.create_job(d)
+
+            if submit:
+                os.chdir(job.abspath)
+                if subargs is not None:
+                    arglist = [job.inpname] + subargs
+                else:
+                    arglist = [job.inpname, '-t', '120:00:00', '-n', '2']
+                # submit the job
+                sub(arglist)
+        else:
+            print('Not writing input for {0}, missing values for: {1}'.format(system.name,
+                str(set(atemp.get_keys()['named']) - set(d.keys()))))
+
+def submit_jobs(systems, jobname, subargs=None):
+    '''
+    submit/resubmit selected jobs
+    '''
+
+    for system in systems:
+        job = next(j for j in system.jobs if j.name == jobname)
+
+        os.chdir(job.abspath)
+        if subargs is not None:
+            arglist = [job.inpname] + subargs
+        else:
+            arglist = [job.inpname, '-t', '120:00:00', '-n', '2']
+        # submit the job
+        sub(arglist)
