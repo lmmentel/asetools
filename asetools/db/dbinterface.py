@@ -477,7 +477,7 @@ def insert_jobs(session, systems, jobname, workdir, temp_id=None,
     '''
 
     if streplace is None:
-        streplace = {'(' : '_', ')' : '_'}
+        streplace = {'(' : '_', ')' : '_', ' ' : '_'}
 
     rtable = maketrans(''.join(streplace.keys()), ''.join(streplace.values()))
 
