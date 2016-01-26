@@ -451,8 +451,6 @@ def add_system():
               topology=args.topology, notes=args.notes,
               calcid=args.calcid, tempid=args.calcid)
 
-
-
 def insert_jobs(session, systems, jobname, workdir, temp_id=None,
                 calc_id=None, hostname='abel.uio.no', streplace=None):
     '''
@@ -485,7 +483,7 @@ def insert_jobs(session, systems, jobname, workdir, temp_id=None,
 
     inpname = jobname.strip().replace(',', '_') + '.py'
 
-    if jobname == 'relax':
+    if jobname.find('relax') > -1:
         outname = 'relaxed.traj'
     elif jobname == 'freq':
         outname = 'vibenergies.pkl'
@@ -602,8 +600,6 @@ def update_geoms(session, systems, jobname):
         session.add(mol)
         session.add(job)
     session.commit()
-
-
 
 def write_jobs(systems, jobname, repl=None, submit=False, subargs=None):
     '''
