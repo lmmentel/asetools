@@ -149,6 +149,8 @@ class DBCalculatorAttribute(PolymorphicVerticalProperty, Base):
 
 class DBCalculator(ProxiedDictMixin, Base):
 
+    'Database version of the Calculator class'
+
     __tablename__ = 'calculators'
 
     id = Column(Integer, primary_key=True)
@@ -157,11 +159,10 @@ class DBCalculator(ProxiedDictMixin, Base):
     description = Column(String)
 
     attributes = relationship("DBCalculatorAttribute",
-                    collection_class=attribute_mapped_collection('key'),
-                    cascade="all, delete-orphan")
+                              collection_class=attribute_mapped_collection('key'),
+                              cascade="all, delete-orphan")
     _proxied = association_proxy("attributes", "value",
-                        creator=
-                        lambda key, value: DBCalculatorAttribute(key=key, value=value))
+                        creator=lambda key, value: DBCalculatorAttribute(key=key, value=value))
 
     @classmethod
     def with_attr(self, key, value):
@@ -209,10 +210,12 @@ class DBTemplate(ProxiedDictMixin, Base):
                         lambda key, value: DBTemplateNote(key=key, value=value))
 
     @classmethod
-    def with_note(self, key, value):
-        return self.notes.any(key=key, value=value)
+    def with_note(cls, key, value):
+        'Convenience method fr querying'
+        return cls.notes.any(key=key, value=value)
 
     def get_repl_keys(self):
+        'Return the keys that will be rendered in the template'
 
         t = AseTemplate(self.template)
         return t.get_keys()
@@ -220,7 +223,7 @@ class DBTemplate(ProxiedDictMixin, Base):
     def __repr__(self):
 
         out = ["DBTemplate(id={0}, name='{1:s}', ase_version={2:s},".format(
-                self.id, self.name, self.ase_version)]
+               self.id, self.name, self.ase_version)]
         out.extend(["\t{0:s} = {1}".format(k, v) for k, v in self.notes.items()])
 
         return "\n".join(out) + ')'
@@ -256,9 +259,11 @@ class DBAtom(Base):
     def __repr__(self):
 
         return "<DBAtom(atomic_number={0:d}, mass={1:10.4f}, x={2:10.4f}, y={3:10.4f}, z={4:10.4f})>".format(
-                self.atomic_number, self.mass, self.x, self.y, self.z)
+            self.atomic_number, self.mass, self.x, self.y, self.z)
 
 class Job(Base):
+
+    'Class for handling jobs'
 
     __tablename__ = 'jobs'
 
@@ -306,12 +311,14 @@ class Job(Base):
 
     def __repr__(self):
         return "%s(\n%s)" % (
-                 (self.__class__.__name__),
-                 ' '.join(["\t%s=%r,\n" % (key, getattr(self, key))
-                            for key in sorted(self.__dict__.keys())
-                            if not key.startswith('_')]))
+            (self.__class__.__name__),
+            ' '.join(["\t%s=%r,\n" % (key, getattr(self, key))
+                      for key in sorted(self.__dict__.keys())
+                      if not key.startswith('_')]))
 
 class Vibration(Base):
+
+    '''A single vibration'''
 
     __tablename__ = 'vibrations'
 
@@ -378,8 +385,6 @@ class System(ProxiedDictMixin, Base):
     System ORM object
 
     Attributes:
-      username : str
-        Name of the user
       name : str
         Name of the system
       topology : str
@@ -442,12 +447,9 @@ class System(ProxiedDictMixin, Base):
                         creator=
                         lambda key, value: SystemNote(key=key, value=value))
 
-
-    def __repr__(self):
-        return "<System(name={0:s}, topology={1:s})>".format(self.name, self.topology)
-
     @classmethod
     def with_note(self, key, value):
+        'Convenience method for querying'
         return self.notes.any(key=key, value=value)
 
     def __repr__(self):
@@ -457,4 +459,3 @@ class System(ProxiedDictMixin, Base):
         out.extend(["\t{0:s} = {1}".format(k, v) for k, v in self.notes.items()])
 
         return "\n".join(out) + ')'
-

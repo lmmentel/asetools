@@ -8,15 +8,19 @@ from __future__ import print_function, division
 import argparse
 import json
 import os
-import pandas as pd
 import pickle
+from string import maketrans
+import pandas as pd
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import numpy as np
 import ase.io
 from ase import Atoms
 from ase.lattice.spacegroup.cell import cellpar_to_cell, cell_to_cellpar
-from .model import Base, DBAtom, System, DBTemplate, DBCalculator, Vibration, VibrationSet
+from .model import Base, DBAtom, System, DBTemplate, DBCalculator, Vibration, VibrationSet, Job
+
+from asetools import AseTemplate
+from asetools.submit import main as sub
 
 def get_session(dbpath, echo=False):
     '''
@@ -36,7 +40,7 @@ def get_session(dbpath, echo=False):
     else:
         engine = create_engine("sqlite:///{path:s}".format(path=dbpath), echo=echo)
         Base.metadata.create_all(engine)
-    db_session =  sessionmaker(bind=engine, autoflush=False, autocommit=False)
+    db_session = sessionmaker(bind=engine, autoflush=False, autocommit=False)
     return db_session()
 
 def get_pgsession(passwd, dbapi='psycopg2'):
@@ -53,7 +57,7 @@ def get_pgsession(passwd, dbapi='psycopg2'):
     '''
 
     engine = create_engine('postgresql+{0:s}://smn_kvantekjemi_test_user:{1:s}@dbpg-hotel-utv.uio.no/smn_kvantekjemi_test'.format(dbapi, passwd))
-    db_session =  sessionmaker(bind=engine, autoflush=False, autocommit=False)
+    db_session = sessionmaker(bind=engine, autoflush=False, autocommit=False)
     return db_session()
 
 def get_pgengine(passwd):
@@ -78,7 +82,7 @@ def get_engine(dbpath):
     engine = create_engine("sqlite:///{path:s}".format(path=dbpath), echo=False)
     return engine
 
-def get_table(tablename,  dbpath, **kwargs):
+def get_table(tablename, dbpath, **kwargs):
     '''
     Return a table from the database as pandas DataFrame
 
@@ -138,7 +142,6 @@ def get_atoms(session, system_id):
     '''
 
     q = session.query(System).get(system_id)
-
     n = len(q.atoms)
 
     xyz = np.hstack((
@@ -172,6 +175,7 @@ def get_atoms(session, system_id):
     return atoms
 
 def get_template(session, ids):
+    'Return a template string based either on the id or name'
 
     if isinstance(ids, int):
         q = session.query(DBTemplate).get(ids)
@@ -254,7 +258,7 @@ def atoms2system(atoms, name=None, topology=None, magnetic_moment=None,
         pbc_b=pbc[1],
         pbc_c=pbc[2],
         atoms=dbatoms,
-	magnetic_moment=magnetic_moment,
+        magnetic_moment=magnetic_moment,
         )
 
     # add the notes to the system instance
@@ -300,13 +304,13 @@ def vibrations2db(vibrations, name=None, atom_ids=None, system_id=None, realonly
 
     if isinstance(vibrations, np.ndarray):
         if vibrations.dtype == np.complex and not realonly:
-	        viblist = [Vibration(energy_real=r, energy_imag=i) for (r, i) in zip(vibrations.real, vibrations.imag)]
+            viblist = [Vibration(energy_real=r, energy_imag=i) for (r, i) in zip(vibrations.real, vibrations.imag)]
         elif realonly:
-	        viblist = [Vibration(energy_real=r, energy_imag=i) for (r, i) in zip(vibrations, np.zeros_like(vibrations))]
+            viblist = [Vibration(energy_real=r, energy_imag=i) for (r, i) in zip(vibrations, np.zeros_like(vibrations))]
     elif isinstance(vibrations, (str, unicode)):
         with open(vibrations, 'r') as fvib:
             array = pickle.load(fvib)
-	    viblist = [Vibration(energy_real=r, energy_imag=i) for (r, i) in zip(array.real, array.imag)]
+        viblist = [Vibration(energy_real=r, energy_imag=i) for (r, i) in zip(array.real, array.imag)]
     else:
         raise ValueError('<vibrations> should be either <str> or <numpy.ndarray> type, got: {}'.format(type(vibrations)))
 
@@ -314,7 +318,6 @@ def vibrations2db(vibrations, name=None, atom_ids=None, system_id=None, realonly
     vibset.vibrations = viblist
 
     return vibset
-
 
 def calculator2db(calc, attrs='basic', description=None):
     '''
@@ -417,6 +420,9 @@ def from_traj(session, traj, name, topology, notes, calcid=None, tempid=None):
     session.commit()
 
 def add_system():
+    '''
+    Add a system to a SQLite3 database from a parsed trajectory file.
+    '''
 
     parser = argparse.ArgumentParser()
 
@@ -445,3 +451,221 @@ def add_system():
               topology=args.topology, notes=args.notes,
               calcid=args.calcid, tempid=args.calcid)
 
+def insert_jobs(session, systems, jobname, workdir, temp_id=None,
+                calc_id=None, hostname='abel.uio.no', streplace=None):
+    '''
+    Insert jobs into the database for specified ``systems``
+
+    Args:
+        session : sqlalchemy.session
+            Session instance with the database connection
+        systems : asetools.db.model.System
+            List of systems objects
+        jobname : str
+            Name of the job see docs
+        workdir : str
+            Path to the workdir
+        temp_no : int
+            Template ID
+        calc_no : int
+            Calculator ID
+        hostname : str
+            Name of the host
+        streplace : dict
+            Dictionary with characters to replace when creating a directory name from
+            the `System.name` attribute
+    '''
+
+    if streplace is None:
+        streplace = {'(' : '_', ')' : '_', ' ' : '_'}
+
+    rtable = maketrans(''.join(streplace.keys()), ''.join(streplace.values()))
+
+    inpname = jobname.strip().replace(',', '_') + '.py'
+
+    if jobname.find('relax') > -1:
+        outname = 'relaxed.traj'
+    elif jobname == 'freq':
+        outname = 'vibenergies.pkl'
+    elif jobname == 'thermo':
+        outname = 'thermo.pkl'
+    else:
+        outname = jobname.strip().replace(',', '_') + '.pkl'
+
+    for syst in systems:
+        djob = Job(
+            abspath=os.path.join(workdir, str(syst.name).translate(rtable)),
+            hostname=hostname,
+            inpname=inpname,
+            outname=outname,
+            name=jobname,
+            status='not started',
+            template_id=temp_id,
+            calculator_id=calc_id,
+            username=os.getenv('USER'),
+            )
+
+        syst.jobs.append(djob)
+        session.add(syst)
+    session.commit()
+
+def update_vibs(session, systems, jobname, vibfile='vibenergies.pkl',
+                vibname='PHVA', thermofile=None, T=298.15, verbose=False):
+    '''
+    Update frequencies and thermochemistry in the database for the `systems`
+    from the jobs `jobname`.
+
+    Args:
+        session : sqlalchemy.session
+            Session instance with the database connection
+        systems : asetools.db.model.System
+            List of systems
+        jobname : str
+            Name of the job for which the data in system should be updated
+        vibfile : str
+            Name of the file with the `ase.Vibrations` object
+        vibname : str
+            Name for the vibrations
+        thermofile : str
+            Name of the file with the Thermochemistry
+        T : float
+            Temperature for thermochemistry calculation
+    '''
+
+    for mol in systems:
+        job = next(j for j in mol.jobs if j.name == jobname)
+        job.jobscript = open(job.inppath, 'r').read()
+
+        if os.path.exists(os.path.join(job.abspath, vibfile)):
+            vibset = vibrations2db(os.path.join(job.abspath, vibfile), name=vibname)
+            mol.vibrationsets.append(vibset)
+
+        if thermofile is not None:
+            if os.path.exists(os.path.join(job.abspath, thermofile)):
+                with open(os.path.join(job.abspath, thermofile), 'r') as fthermo:
+                    thermo = pickle.load(fthermo)
+
+                thermoname = thermo.__class__.__name__
+                mol.thermo = thermoname + '@{:.2f}'.format(T)
+
+                if thermoname in ['HarmonicThermo', 'CrystalThermo']:
+                    mol.entropy = thermo.get_entropy(T, verbose=verbose)
+                    mol.internal_energy = thermo.get_internal_energy(T, verbose=verbose)
+                    mol.free_energy = thermo.get_helmholtz_energy(T, verbose=verbose)
+                elif thermoname == 'IdealGasThermo':
+                    mol.entropy = thermo.get_entropy(T, verbose=verbose)
+                    mol.enthalpy = thermo.get_enthalpy(T, verbose=verbose)
+                    mol.free_energy = thermo.get_gibbs_energy(T, verbose=verbose)
+                else:
+                    raise ValueError('Unknown thermoname: {}'.format(thermoname))
+
+        session.add(mol)
+        session.add(job)
+    session.commit()
+
+def update_geoms(session, systems, jobname):
+    '''
+    Update the database for the `systems` from the jobs `jobname`
+
+    Args:
+        session : sqlalchemy.session
+            Session instance with the database connection
+        systems : asetools.db.model.System
+            List of systems
+        jobname : str
+            Name of the job for which the data in system should be updated
+    '''
+
+    for mol in systems:
+        job = next(j for j in mol.jobs if j.name == jobname)
+        job.jobscript = open(job.inppath, 'r').read()
+
+        atoms = ase.io.read(str(job.outpath), format='traj')
+
+        dbatoms = atoms2db(atoms)
+        mol.atoms = dbatoms
+        cellpar = cell_to_cellpar(atoms.get_cell())
+        pbc = atoms.get_pbc()
+        mol.cell_a = cellpar[0]
+        mol.cell_b = cellpar[1]
+        mol.cell_c = cellpar[2]
+        mol.cell_alpha = cellpar[3]
+        mol.cell_beta = cellpar[4]
+        mol.cell_gamma = cellpar[5]
+        mol.pbc_a = bool(pbc[0])
+        mol.pbc_b = bool(pbc[1])
+        mol.pbc_c = bool(pbc[2])
+        mol.formula = atoms.get_chemical_formula()
+        mol.energy = atoms.get_potential_energy()
+        session.add(mol)
+        session.add(job)
+    session.commit()
+
+def write_jobs(systems, jobname, repl=None, submit=False, subargs=None):
+    '''
+    Render the template file into an input script for the job, write the file and
+    submit the job (if requested).
+
+    Args:
+        systems : asetools.db.model.System
+            A list of `System` objects
+        jobname : str
+            Name of the job to be created
+        repl : list of dicts
+            List/tuple of dictionaries with key, value pairs to be rendered
+            into the template, they will overwrite the values obtained from the
+            calculator specified in the job
+        submit : bool
+            A flag to specify whether to submit the job or not
+        subargs : list of strings
+            A list of arguments for the batch program used to submit the job
+    '''
+
+    if len(systems) != len(repl):
+        raise ValueError('len(systems) != len(repl), {0:d} != {1:d}'.format(len(systems), len(repl)))
+
+    for system, drepl in zip(systems, repl):
+        job = next(j for j in system.jobs if j.name == jobname)
+
+        atemp = AseTemplate(job.template.template)
+
+        # create a dictionary with replacements for the template by getting the
+        # matching values from the calculator attributes absed on keys from the
+        # template
+        d = {k: job.calculator[k] for k in atemp.get_keys()['named'] if k in job.calculator.attributes.keys()}
+
+        d.update(drepl)
+
+        # check if all the template keys have values before rendering the tempate
+
+        if len(atemp.get_keys()['named']) == len(d.keys()):
+
+            job.create_job(d)
+
+            if submit:
+                os.chdir(job.abspath)
+                if subargs is not None:
+                    arglist = [job.inpname] + subargs
+                else:
+                    arglist = [job.inpname, '-t', '120:00:00', '-n', '2']
+                # submit the job
+                sub(arglist)
+        else:
+            print('Not writing input for {0}, missing values for: {1}'.format(system.name,
+                str(set(atemp.get_keys()['named']) - set(d.keys()))))
+
+def submit_jobs(systems, jobname, subargs=None):
+    '''
+    submit/resubmit selected jobs
+    '''
+
+    for system in systems:
+        job = next(j for j in system.jobs if j.name == jobname)
+
+        os.chdir(job.abspath)
+        if subargs is not None:
+            arglist = [job.inpname] + subargs
+        else:
+            arglist = [job.inpname, '-t', '120:00:00', '-n', '2']
+        # submit the job
+        sub(arglist)
