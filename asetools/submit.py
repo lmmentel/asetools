@@ -72,10 +72,9 @@ def main(args=None):
                         nargs="+",
                         default=None,
                         help="additional files that need to be copied to the node/scratch")
-    parser.add_argument('--nativeqe',
-                        action="store_true",
-                        default=False,
-                        help='Runs internal espresso routines, instead of through the ase-espresso interface')
+    parser.add_argument('--program',
+                        default='pythonqe',
+                        help='Specify which program to run. pythonqe: prepares script for running quantum espresso through the ase-espresso interface. nativeqe: runs internal espresso routines. manual: specify executions manually. Default: pythonqe.')
     parser.add_argument('-m',
                         '--mem-per-cpu',
                         default='3700M',
@@ -110,7 +109,7 @@ def main(args=None):
 
     submit(args)
 
-def submit(args):
+def submit(args): 
     '''
     Submit a job to the batch system defined by the "batch" variable with the
     job details specified in the args object.
@@ -135,6 +134,7 @@ def submit(args):
     else:
         raise NotImplementedError("support for '{0:s}' is not implemented \
                 supported batch systems are: {1:s}".format(args['batch'], ", ".join(submitters.keys())))
+   
 
 def submit_pbs(args):
     '''
@@ -193,12 +193,12 @@ def write_slurm_script(args):
         script.write("#SBATCH --nodes={0} --ntasks-per-node={1}\n".format(args['nodes'], args['ppn']))
         script.write("#SBATCH --mail-type=FAIL\n")
         script.write("\n# Set up job environment\n")
-        script.write("source {}\n".format(os.path.join(args["home"], ".bash_profile")))
+	if args['program'] in ['pythonqe','nativeqe']:
+           script.write("source {}\n".format(os.path.join(args["home"], ".bash_profile")))
         script.write("source /cluster/bin/jobsetup\n")
-        script.write("module load {}\n".format(" ".join(args['modules'])))
-        script.write("\n# Automatic copying of files and directories back to $SUBMITDIR\n")
-        if args['cleanup'] != "":
-                script.write("cleanup {}\n".format(args['cleanup']))
+	if args['cleanup'] is not None:
+                script.write("\n# Automatic copying of files and directories back to $SUBMITDIR\n")
+                script.write("cleanup \"{}\"\n".format(args['cleanup']))
         script.write("\n# Do the work\n")
         script.write("{}\n".format(args['commands']))
         script.write("\n# update the list of completed jobs\n")
@@ -209,23 +209,27 @@ def submit_slurm(args):
     Write the run script for SLURM and submit it to the queue.
     '''
 
-    args['modules'] = ['python2','espresso/5.0.3_beef'] #5.0.3 is 5.0.2 with openmpi1.8
-
     if int(args["ppn"]) > 16:
         args['nodes'] = int(np.ceil(int(args["ppn"])/16.0)) #NB: means that for >16 CPUs, the script will automatically fully allocate all nodes, i.e. up to 15 more CPUs than requested
         args['ppn'] = 16
 
-    if args["nativeqe"]:
-        args['commands'] = 'cp *.inp $SCRATCH\ncd $SCRATCH\nmpirun pw.x < pw.inp > pw.out\nmpirun ph.x < ph.inp > ph.out\nmpirun dynmat.x < dynmat.inp > dynmat.out'
-        args['cleanup'] = 'cp -r pw.out dyn.traj ph.out dynmat.dat dynmat.out dynmat.mold calc.save _ph0/calc.phsave $SUBMITDIR'
-    else:
-        args['commands'] = "python " + args["input"]
-        args['cleanup'] = ""
+    if args['program'] == 'pythonqe':
+	args['commands'] = "module load python2 espresso/5.0.3_beef\npython " + args["input"]
+	args['cleanup'] = None
+    elif args['program'] == 'nativeqe':
+        args['commands'] = '\n'.join(['module load espresso/5.0.3_beef','cp *.inp $SCRATCH','cd $SCRATCH','mpirun pw.x < pw.inp > pw.out','mpirun ph.x < ph.inp > ph.out','mpirun dynmat.x < dynmat.inp > dynmat.out']) #5.0.3 is 5.0.2 with openmpi1.8
+        args['cleanup'] = 'cp -r $SCRATCH/pw.out $SCRATCH/dyn.traj $SCRATCH/ph.out $SCRATCH/dynmat.dat $SCRATCH/dynmat.out $SCRATCH/dynmat.mold $SCRATCH/calc.save $SCRATCH/_ph0/calc.phsave $SUBMITDIR'
+    elif args['program']  == 'lammps':
+	commands = ['module purge','module load intelmpi.intel']
+	files = ['$HOME/bin/lmp.double',args['input']]
+	if args['extrafiles']:	
+	   files += args['extrafiles']
+	commands += ['cp '+' '.join(files)+' $SCRATCH']
+	commands += ['cd $SCRATCH','mpirun -env KMP_AFFINITY scatter -env OMP_NUM_THREADS 1 -np {0} ./lmp.double -in {1} -screen none ##-log none'.format(args['ppn'],args['input'])]
+	args['commands'] = '\n'.join(commands)
 
-    skipped = ['batch', 'extrafiles', 'home', 'HOST', 'local_scr', 'vars']
-    strargs = "".join(["{0:>15s}".format(str(args[k])) for k in sorted(args.keys())
-                      if not k in skipped])
-
+	args['cleanup'] = 'cp -r $SCRATCH/* $SUBMITDIR'
+	
     if os.path.exists(args['script_name']):
         message = 'Run script: {} exists, overwrite?'.format(args['script_name'])
         if query_yes_no(message):
@@ -262,3 +266,4 @@ def header(args, skipped):
 
 if __name__ == "__main__":
     main(None)
+

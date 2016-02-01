@@ -3,9 +3,8 @@
 from ase.io import read
 from sys import argv
 
-try:
-  fname = argv[1]
-except:
-  fname = 'dyn.traj'
+if len(argv) == 1:
+  argv += ['dyn.traj']
 
-print fname+'\n',read(fname).get_cell()
+for fname in argv[1:]:
+  print fname+'\n',read(fname).get_cell()

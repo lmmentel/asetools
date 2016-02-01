@@ -177,7 +177,7 @@ def main():
     with open('input.py','w') as finp:
 	finp.write(inputstr)
     if args['native']: 
-	args['exargs'] += ['--native'] #to be passed on to submitQE
+	args['exargs'] += ['--program','nativeqe'] #to be passed on to submit.main
 	exec(inputstr) #generate native espresso input file for pw.x
 	if args['thermo']: #write additional files for ph.x and dynmat.x
            phtemplate = Template(get_template('ph_template.py'))
