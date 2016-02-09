@@ -452,6 +452,16 @@ class System(ProxiedDictMixin, Base):
         'Convenience method for querying'
         return self.notes.any(key=key, value=value)
 
+    @hybrid_property
+    def forces(self):
+        '''Return a numpy array with the forces'''
+
+        values = [[a.force_x,a.force_y,a.force_z] for a in self.atoms]
+        if len(values) > 0:
+            return np.asarray(values)
+        else:
+            return None
+
     def __repr__(self):
 
         out = ["System(id={0}, name='{1:s}', topology={2:s}, formula={3:s},".format(
