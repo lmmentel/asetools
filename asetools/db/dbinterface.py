@@ -601,7 +601,7 @@ def update_geoms(session, systems, jobname):
         session.add(job)
     session.commit()
 
-def write_jobs(systems, jobname, repl=None, submit=False, subargs=None):
+def write_jobs(systems, jobname, repl=None, submit=False, subargs=None,overwrite=False):
     '''
     Render the template file into an input script for the job, write the file and
     submit the job (if requested).
@@ -619,6 +619,8 @@ def write_jobs(systems, jobname, repl=None, submit=False, subargs=None):
             A flag to specify whether to submit the job or not
         subargs : list of strings
             A list of arguments for the batch program used to submit the job
+	overwrite : bool
+            If true, overwrite any (script) files already present in the job directory
     '''
 
     if len(systems) != len(repl):
@@ -640,7 +642,7 @@ def write_jobs(systems, jobname, repl=None, submit=False, subargs=None):
 
         if len(atemp.get_keys()['named']) == len(d.keys()):
 
-            job.create_job(d)
+            job.create_job(d,overwrite)
 
             if submit:
                 os.chdir(job.abspath)
