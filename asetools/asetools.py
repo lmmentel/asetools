@@ -153,11 +153,11 @@ def interp_positions(image1, image2, no=1):
 
 def get_maxforce(atoms):
     try:
-        return getmaxLength(atoms.get_forces())
+        return get_maxlength(atoms.get_forces())
     except:
         raise
 
-def get_maxLength(vec):
+def get_maxlength(vec):
     '''Return the length of the longest vector in an array of vectors'''
     return np.sqrt(np.sum(vec**2.0,axis=1)).max()
 
