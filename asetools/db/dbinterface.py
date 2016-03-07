@@ -553,7 +553,10 @@ def update_vibs(session, systems, jobname, vibfile='vibenergies.pkl',
                 if thermoname in ['HarmonicThermo', 'CrystalThermo']:
                     mol.entropy = thermo.get_entropy(T, verbose=verbose)
                     mol.internal_energy = thermo.get_internal_energy(T, verbose=verbose)
-                    mol.free_energy = thermo.get_helmholtz_energy(T, verbose=verbose)
+                    # older version of ase have gibbs free energy instead of
+                    # helmholtz
+                    mol.free_energy = thermo.get_gibbs_energy(T, verbose=verbose)
+                    #mol.free_energy = thermo.get_helmholtz_energy(T, verbose=verbose)
                 elif thermoname == 'IdealGasThermo':
                     mol.entropy = thermo.get_entropy(T, verbose=verbose)
                     mol.enthalpy = thermo.get_enthalpy(T, verbose=verbose)
