@@ -3,7 +3,7 @@
 #NB NB: must be executed in the directory in which the original job
 #was performed.
 mv dyn.traj restart.traj
-sed "s#\(read('\).*\(')\)#\1restart.traj\2#" input.py > input_temp
-mv input_temp input.py
+sed "s#\(read('\).*\(')\)#\1restart.traj\2#" $1 > temp
+mv temp $1
 rm -fr qe[0-9]*_* slurm-*.out
-submitQE.py input.py 
+submitQE.py $@

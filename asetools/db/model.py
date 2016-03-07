@@ -294,7 +294,7 @@ class Job(Base):
         'Return the full path to the outpath file'
         return os.path.join(self.abspath, self.outname)
 
-    def create_job(self, repl):
+    def create_job(self, repl,overwrite=False):
         '''
         Create a directory for a job and write the job script to it based on
         the information from the Job instance.
@@ -302,9 +302,15 @@ class Job(Base):
         Args:
           repl : dict
             Dictionary of items to be replaced in the template
+	  overwrite : bool
+	    If true, overwrite any files already present
         '''
 
-        os.makedirs(self.abspath)
+	try:
+	   os.makedirs(self.abspath)
+	except OSError:
+	   if not overwrite:
+	     raise
 
         t = AseTemplate(self.template.template)
         t.render_and_write(repl, output=self.inppath)
@@ -451,6 +457,16 @@ class System(ProxiedDictMixin, Base):
     def with_note(self, key, value):
         'Convenience method for querying'
         return self.notes.any(key=key, value=value)
+
+    @hybrid_property
+    def forces(self):
+        '''Return a numpy array with the forces'''
+
+        values = [[a.force_x,a.force_y,a.force_z] for a in self.atoms]
+        if len(values) > 0:
+            return np.asarray(values)
+        else:
+            return None
 
     def __repr__(self):
 

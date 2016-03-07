@@ -35,6 +35,10 @@ vib.run()
 if rank == 0:
    vib.summary(method='$method')
    vibenergies = vib.get_energies()
+# Make trajectory files to visualize normal modes:
+   for mode in range(len(indices)*3):
+        vib.write_mode(mode)
+# Pickle HarmonicThermo object and vibenergies array
    if len(indices) < atoms.get_number_of_atoms():
         supp = '_partial'
 	thermo = HarmonicThermo(vibenergies,elecenergy)
@@ -44,6 +48,3 @@ if rank == 0:
         supp = ''
    with open('vibenergies%s.pckl' % supp,'w') as file:
       pickle.dump(vibenergies,file)
-# Make trajectory files to visualize normal modes:
-   for mode in range(len(indices)*3):
-        vib.write_mode(mode)
