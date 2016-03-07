@@ -510,7 +510,8 @@ def insert_jobs(session, systems, jobname, workdir, temp_id=None,
     session.commit()
 
 def update_vibs(session, systems, jobname, vibfile='vibenergies.pkl',
-                vibname='PHVA', thermofile=None, T=298.15, verbose=False):
+                vibname='PHVA', thermofile=None, T=298.15, verbose=False,
+                jobstatus='finished'):
     '''
     Update frequencies and thermochemistry in the database for the `systems`
     from the jobs `jobname`.
@@ -535,6 +536,7 @@ def update_vibs(session, systems, jobname, vibfile='vibenergies.pkl',
     for mol in systems:
         job = next(j for j in mol.jobs if j.name == jobname)
         job.jobscript = open(job.inppath, 'r').read()
+        job.status = jobstatus
 
         if os.path.exists(os.path.join(job.abspath, vibfile)):
             vibset = vibrations2db(os.path.join(job.abspath, vibfile), name=vibname)
@@ -563,7 +565,7 @@ def update_vibs(session, systems, jobname, vibfile='vibenergies.pkl',
         session.add(job)
     session.commit()
 
-def update_geoms(session, systems, jobname):
+def update_geoms(session, systems, jobname, jobstatus='finished'):
     '''
     Update the database for the `systems` from the jobs `jobname`
 
@@ -579,6 +581,7 @@ def update_geoms(session, systems, jobname):
     for mol in systems:
         job = next(j for j in mol.jobs if j.name == jobname)
         job.jobscript = open(job.inppath, 'r').read()
+        job.status = jobstatus
 
         atoms = ase.io.read(str(job.outpath), format='traj')
 

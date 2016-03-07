@@ -1,5 +1,4 @@
 
-''' ASE-Tools package with helpful scripts'''
 
 from setuptools import setup
 
