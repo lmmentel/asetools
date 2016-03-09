@@ -307,7 +307,7 @@ class Job(Base):
 	    If `True`, overwrite any files already present
         '''
 
-        if os.path.exist(self.abspath):
+        if os.path.exists(self.abspath):
             if overwrite:
                 shutil.rmtree(self.abspath)
             else:
