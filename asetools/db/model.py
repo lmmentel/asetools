@@ -8,7 +8,7 @@ from operator import attrgetter
 import datetime
 import numpy as np
 import os
-import shutils
+import shutil
 
 from sqlalchemy import (Column, LargeBinary, Integer, String, Float,
         PickleType, ForeignKey, DateTime, Unicode, UnicodeText, Boolean)

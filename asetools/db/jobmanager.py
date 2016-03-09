@@ -37,7 +37,7 @@ class JobManager(object):
 
         self.session = session
 
-    def get_thermo(self, systems, T):
+    def get_thermo(self, systems, T, thermo='HarmonicThermo'):
         '''
         Calculate thermochemistry based on the electronic energy in System
         vibrations in VibrationSet, specified temperature T and thermo type.
@@ -49,8 +49,8 @@ class JobManager(object):
 
         pass
 
-    def inset_vibs(self, systems, relaxname='relax', calc_id=1, temp_id=8,
-                   vibname='freq,thermo', commit=True):
+    def insert_vibs(self, systems, relaxname='relax', calc_id=1, temp_id=8,
+                    vibname='freq,thermo', commit=True):
         '''
         Insert jobs for calculating the vibrations and/or thermochemistry to
         the db.
