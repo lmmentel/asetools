@@ -38,7 +38,7 @@ class Mock(MagicMock):
 MOCK_MODULES = ['argparse', 'numpy', 'scipy', 'scipy.optimize', 'scipy.constants',
                 'scipy.constants.value', 'pandas', 'mendeleev', 'ase', 'ase.io',
                 'ase.io.cif', 'ase.lattice', 'ase.lattice.spacegroup',
-                'ase.lattice.spacegroup.cell']
+                'ase.lattice.spacegroup.cell', 'ase.thermochemistry']
 
 sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 

@@ -41,22 +41,20 @@ class JobManager(object):
     def get_thermo(self, systems, thermo='Harmonic', vibsetname='PHVA',
                    **kwargs):
         '''
-        Calculate thermochemistry based on the electronic energy in System
-        vibrations in VibrationSet, specified temperature T and thermo type.
+        For a list of specified :py:class:`System <asetools.db.model.System>`
+        intances create and return a corresponding list of thermochemistry
+        instances based on the electronic energy in
+        :py:class:`System <asetools.db.model.System>`, vibrations in
+        :py:class:`VibrationSet <asetools.db.model.VibrationSet>` and thermo type.
 
         Args:
             systems : list
-                List of `asetools.db.model.System` instances
+                List of :py:class:`System <asetools.db.model.System>` instances
             thermo : str
                 Name of the thermochemical model to use, `Harmonic` or `IdealGas`
             vibsetname : str
                 Name of the vibration set to select
         '''
-
-        # get the specified thermochemistry class from ase
-        thermocls = getattr(ase.thermochemistry, thermo)
-        if thermocls is None:
-            raise ValueError('wrong thermo name: {}'.format(thermo))
 
         out = []
         for system in systems:
@@ -73,59 +71,15 @@ class JobManager(object):
 
         return out
 
-    def insert_vibs(self, systems, relaxname='relax', calc_id=1, temp_id=8,
-                    vibname='freq,thermo', commit=True):
-        '''
-        Insert jobs for calculating the vibrations and/or thermochemistry to
-        the db.
-
-        Args:
-            systems : list
-                List of `asetools.db.model.System` instances
-            relaxname : str
-                Name of the job (referencing `Job.name`) in which the geometry
-                was relaxed
-            vibname : str
-                Name of the job (referencing `Job.name`) for the frequency calculation
-            temp_id : int
-                Template ID
-            calc_id : int
-                Calculator ID
-        '''
-
-        for system in systems:
-            relaxjob = next(j for j in system.jobs if j.name == relaxname)
-
-            sanitized = sanitizestr(vibname)
-
-            freqjob = Job(
-                abspath=os.path.join(relaxjob.abspath, sanitized),
-                calculator_id=calc_id,
-                hostname='abel.uio.no',
-                inpname=sanitized + '.py',
-                name=vibname,
-                outname=u'vibenergies.pckl',
-                status=u'not started',
-                template_id=temp_id,
-                jobscript=None,
-                username=os.getenv('USER')
-                )
-            system.jobs.append(freqjob)
-            self.session.add(system)
-
-        if commit:
-            self.session.commit()
-        else:
-            self.session.rollback()
-
     def insert_jobs(self, systems, jobname, workdir, temp_id=None,
                     calc_id=None, hostname='abel.uio.no', commit=True):
         '''
-        Insert jobs into the database for specified ``systems``
+        Create :py:class:`Job <asetools.db.model.Job>` instances  and insert
+        them into the db.
 
         Args:
             systems : list
-                List of `asetools.db.model.System` instances
+                List of :py:class:`System <asetools.db.model.System>` instances
             jobname : str
                 Name of the job see docs
             workdir : str
@@ -171,16 +125,160 @@ class JobManager(object):
         else:
             self.session.rollback()
 
+    def insert_neb(self, ts_name, initial_name, final_name, workdir, temp_id=9,
+                   calc_id=1, nimage=5, springc=0.1, climb=True, magmoms='',
+                   fmax=0.2, commit=True):
+        '''
+        Create a new `System` entry and  neb `Job` and insert both into the
+        database
+
+        Args:
+            ts_name : str
+                Name of the transitions state `System` to be created
+            initial_name : str
+                Name of the `System` which will be the initial state for the neb
+            final_name : str
+                Name of the `System` which will be the final state of the neb
+            workdir : str
+                Working directory
+            temp_id : int
+                Template ID
+            calc_id : int
+                Calculator ID
+            nimage : int
+                Number of NEB images
+            springc : float
+                Spting constant see:: https://wiki.fysik.dtu.dk/ase/ase/neb.html
+            climb : bool
+                Use climbing image see:: https://wiki.fysik.dtu.dk/ase/ase/neb.html
+            magmoms : str
+                Magnetic moments
+            fmax : float
+                Force threshold for the optimizer
+            commit : bool
+                Flag to mark whether to commit changes or not
+        '''
+
+        initial = self.session.query(System).filter(System.name == initial_name).one()
+        final = self.session.query(System).filter(System.name == final_name).one()
+
+        tst = System(name=ts_name, topology=initial.topology)
+
+        self.insert_jobs([tst], jobname='neb', workdir=workdir, temp_id=temp_id,
+                         calc_id=calc_id, commit=commit)
+
+        repls = {'initial' : 'initial.traj',
+                 'final'   : 'final.traj',
+                 'nimage'  : nimage,
+                 'springc' : springc,
+                 'climb'   : climb,
+                 'magmoms' : magmoms,
+                 'fmax'    : fmax,
+                }
+
+        self.write_jobs([tst], 'neb', subs=[repls], commit=commit)
+
+        # write initial and final structures into the working directory of the job
+        nebjob = next(j for j in tst.jobs if j.name == 'neb')
+        for struct, name in zip([initial, final], ['initial.traj', 'final.traj']):
+            atoms = get_atoms(self.session, struct.id)
+            ase.io.write(os.path.join(nebjob.abspath, name), atoms)
+
+    def insert_vibs(self, systems, relaxname='relax', calc_id=1, temp_id=8,
+                    vibname='freq,thermo', hostname='abel.uio.no', commit=True):
+        '''
+        Create :py:class:`Job <asetools.db.model.Job>` instances for calculating
+        the vibrations and/or thermochemistry and insert them into the db.
+
+        Args:
+            systems : list
+                List of :py:class:`System <asetools.db.model.System>` instances
+            relaxname : str
+                Name of the job (referencing `Job.name`) in which the geometry
+                was relaxed
+            vibname : str
+                Name of the job (referencing `Job.name`) for the frequency calculation
+            temp_id : int
+                Template ID
+            calc_id : int
+                Calculator ID
+            hostname : str
+                Name of the host
+            commit : bool
+                Flag to mark whether to commit changes or not
+        '''
+
+        for system in systems:
+            relaxjob = next(j for j in system.jobs if j.name == relaxname)
+
+            sanitized = sanitizestr(vibname)
+
+            freqjob = Job(
+                abspath=os.path.join(relaxjob.abspath, sanitized),
+                calculator_id=calc_id,
+                hostname=hostname,
+                inpname=sanitized + '.py',
+                name=vibname,
+                outname=u'vibenergies.pckl',
+                status=u'not started',
+                template_id=temp_id,
+                jobscript=None,
+                username=os.getenv('USER')
+                )
+            system.jobs.append(freqjob)
+            self.session.add(system)
+
+        if commit:
+            self.session.commit()
+        else:
+            self.session.rollback()
+
+    def submit_jobs(self, systems, jobname, subargs=None, commit=True):
+        '''
+        Submit/resubmit selected jobs for specified systems
+
+        Args:
+            systems : list
+                List of :py:class:`System <asetools.db.model.System>` instances
+            jobname : str
+                Name of the job to submit, referencing `Job.name`
+            subargs : list
+                List of `str` argument to be passed to `asetools.submit.main`
+                and then to the scheduler
+            commit : bool
+                Flag to mark whether to commit changes or not
+        '''
+
+        for system in systems:
+            job = next(j for j in system.jobs if j.name == jobname)
+
+            os.chdir(job.abspath)
+            if subargs is not None:
+                arglist = [job.inpname] + subargs
+            else:
+                arglist = [job.inpname, '-t', '120:00:00', '-n', '2']
+            # submit the job
+            sub(arglist)
+
+            # update job status
+            job.status = 'submitted'
+            self.session.add(job)
+
+        if commit:
+            self.session.commit()
+        else:
+            self.session.rollback()
+
     def update_vibs(self, systems, jobname, vibfile='vibenergies.pkl',
                     vibname='PHVA', thermofile=None, T=298.15, verbose=False,
                     jobstatus='finished', commit=True):
         '''
         Update frequencies and thermochemistry in the database for the `systems`
-        from the jobs `jobname`.
+        from the jobs with the name `jobname`.
 
         Args:
             systems : list
-                List of `asetools.db.model.System` instances
+                List of :py:class:`System <asetools.db.model.System>` instances
             jobname : str
                 Name of the job for which the data in system should be updated
             vibfile : str
@@ -238,11 +336,8 @@ class JobManager(object):
         Update the database for the `systems` from the jobs `jobname`
 
         Args:
-            session : sqlalchemy.session
-                Session instance with the database connection
-                A list of `System` objects
             systems : list
-                List of `asetools.db.model.System` instances
+                List of :py:class:`System <asetools.db.model.System>` instances
             jobname : str
                 Name of the job for which the data in system should be updated
             commit : bool
@@ -330,7 +425,7 @@ class JobManager(object):
         '''
         Args:
             systems : list
-                List of `asetools.db.model.System` instances
+                List of :py:class:`System <asetools.db.model.System>` instances
             subs : dict
                 Dictionary with key, value pairs to be rendered into the job
                 template, they will overwrite the values obtained from the
@@ -375,98 +470,3 @@ class JobManager(object):
 
         if submit:
             self.submit_jobs(systems, vibname, subargs, commit)
-
-    def insert_neb(self, ts_name, initial_name, final_name, workdir, temp_id,
-                   calc_id, nimage=5, springc=0.1, climb=True, magmoms='',
-                   fmax=0.2, commit=True):
-        '''
-        Create a new `System` entry and  neb `Job` and insert both into the
-        database
-
-        Args:
-            ts_name : str
-                Name of the transitions state `System` to be created
-            initial_name : str
-                Name of the `System` which will be the initial state for the neb
-            final_name : str
-                Name of the `System` which will be the final state of the neb
-            workdir : str
-                Working directory
-            temp_id : int
-                Template ID
-            calc_id : int
-                Calculator ID
-            nimage : int
-                Number of NEB images
-            springc : float
-                Spting constant see:: https://wiki.fysik.dtu.dk/ase/ase/neb.html
-            climb : bool
-                Use climbing image see:: https://wiki.fysik.dtu.dk/ase/ase/neb.html
-            magmoms : str
-                Magnetic moments
-            fmax : float
-                Force threshold for the optimizer
-            commit : bool
-                Flag to mark whether to commit changes or not
-        '''
-
-        initial = self.session.query(System).filter(System.name == initial_name).one()
-        final = self.session.query(System).filter(System.name == final_name).one()
-
-        ts = System(name=ts_name, topology=initial.topology)
-
-        self.insert_jobs([ts], jobname='neb', workdir=workdir, temp_id=temp_id,
-                         calc_id=calc_id, commit=commit)
-
-        repls = {'initial' : 'initial.traj',
-                 'final'   : 'final.traj',
-                 'nimage'  : nimage,
-                 'springc' : springc,
-                 'climb'   : climb,
-                 'magmoms' : magmoms,
-                 'fmax'    : fmax,
-                }
-
-        self.write_jobs([ts], 'neb', subs=[repls], commit=commit)
-
-        # write initial and final structures into the working directory of the job
-        nebjob = next(j for j in ts.jobs if j.name == 'neb')
-        for struct, name in zip([initial, final], ['initial.traj', 'final.traj']):
-            atoms = get_atoms(self.session, struct.id)
-            ase.io.write(os.path.join(nebjob.abspath, name), atoms)
-
-    def submit_jobs(self, systems, jobname, subargs=None, commit=True):
-        '''
-        Submit/resubmit selected jobs for specified systems
-
-        Args:
-            systems : list
-                List of `asetools.db.model.System` instances
-            jobname : str
-                Name of the job to submit, referencing `Job.name`
-            subargs : list
-                List of `str` argument to be passed to `asetools.submit.main`
-                and then to the scheduler
-            commit : bool
-                Flag to mark whether to commit changes or not
-        '''
-
-        for system in systems:
-            job = next(j for j in system.jobs if j.name == jobname)
-
-            os.chdir(job.abspath)
-            if subargs is not None:
-                arglist = [job.inpname] + subargs
-            else:
-                arglist = [job.inpname, '-t', '120:00:00', '-n', '2']
-            # submit the job
-            sub(arglist)
-
-            # update job status
-            job.status = 'submitted'
-            self.session.add(job)
-
-        if commit:
-            self.session.commit()
-        else:
-            self.session.rollback()
