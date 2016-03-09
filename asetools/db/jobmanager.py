@@ -10,10 +10,11 @@ from string import maketrans
 
 import ase.io
 from ase.lattice.spacegroup.cell import cell_to_cellpar
+from ase.thermochemistry import HarmonicThermo, IdealGasThermo
 
 from asetools import AseTemplate
 from asetools.submit import main as sub
-from .model import Job, System
+from .model import Job, System, VibrationSet
 from .dbinterface import vibrations2db, atoms2db, get_atoms
 
 def sanitizestr(value, repd=None, keepchars=None):
@@ -37,7 +38,8 @@ class JobManager(object):
 
         self.session = session
 
-    def get_thermo(self, systems, T, thermo='HarmonicThermo'):
+    def get_thermo(self, systems, thermo='Harmonic', vibsetname='PHVA',
+                   **kwargs):
         '''
         Calculate thermochemistry based on the electronic energy in System
         vibrations in VibrationSet, specified temperature T and thermo type.
@@ -45,9 +47,31 @@ class JobManager(object):
         Args:
             systems : list
                 List of `asetools.db.model.System` instances
+            thermo : str
+                Name of the thermochemical model to use, `Harmonic` or `IdealGas`
+            vibsetname : str
+                Name of the vibration set to select
         '''
 
-        pass
+        # get the specified thermochemistry class from ase
+        thermocls = getattr(ase.thermochemistry, thermo)
+        if thermocls is None:
+            raise ValueError('wrong thermo name: {}'.format(thermo))
+
+        out = []
+        for system in systems:
+            energy = system.energy
+            vibset = self.session.query(VibrationSet).\
+                                  filter(VibrationSet.name == vibsetname).\
+                                  filter(VibrationSet.system_id == system.id).one()
+            vibenergies = vibset.vibenergies()
+
+            if thermo == 'Harmonic':
+                out.append(HarmonicThermo(vibenergies, energy))
+            elif thermo == 'IdealGas':
+                out.append(IdealGasThermo(vibenergies, kwargs.pop('geometry'), energy, **kwargs))
+
+        return out
 
     def insert_vibs(self, systems, relaxname='relax', calc_id=1, temp_id=8,
                     vibname='freq,thermo', commit=True):
