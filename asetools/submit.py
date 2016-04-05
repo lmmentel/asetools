@@ -83,9 +83,9 @@ def main(args=None):
                         type=int,
                         default=16,
                         help='Number of cores. Default=16 (one full node)')
-    parser.add_argument('--projectno',
+    parser.add_argument('--account',
                         default='nn4683k',
-                        help='NOTUR project number. Retrieve it with PROJECT command.')
+                        help='Project account. Retrieve it with PROJECT command.')
     parser.add_argument("-q",
                         "--queue",
                         default="default",
