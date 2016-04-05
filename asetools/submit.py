@@ -187,7 +187,7 @@ def write_slurm_script(args):
     with open(args['script_name'], 'w') as script:
         script.write("#!/bin/bash\n")
         script.write("#SBATCH --job-name={}\n".format(args['workdir'][-8:]))
-        script.write("#SBATCH --account={}\n".format(args["projectno"]))
+        script.write("#SBATCH --account={}\n".format(args['account']))
         script.write("#SBATCH --time={}\n".format(args["walltime"]))
         script.write("#SBATCH --mem-per-cpu={}\n".format(args['mem_per_cpu']))
         script.write("#SBATCH --nodes={0} --ntasks-per-node={1}\n".format(args['nodes'], args['ppn']))
