@@ -1,6 +1,8 @@
 
 '''asetools package'''
 
+from __future__ import print_function
+
 import os
 import sys
 import numpy as np
@@ -354,7 +356,7 @@ def set_init_magmoms(atoms, magset):
         magvals = [magmom]*len(idxs)
         indxs += zip(idxs,magvals)
     if indxs == [] and magset != []:
-        print 'Error: no elements of specified type present. Exiting...'
+        raise ValueError('Error: no elements of specified type present. Exiting...')
     else:
         set_init_magmoms_from_indxs(atoms,indxs)
 
@@ -369,32 +371,31 @@ def set_init_magmoms_from_indxs(atoms, indxs):
     atoms.set_initial_magnetic_moments(new_magmoms)
 
 def get_magnetization(logfile):
-        #Adapted from ase-espresso interface written by Johannes Voss
-        #https://github.com/vossjo/ase-espresso/wiki
-	'''
-        Returns total and absolute magnetization after SCF run.
-        Units are Bohr magnetons per unit cell, directly read from PWscf log.
-        Returns (0,0) if no magnetization is found in log.
-        '''
-        p1 = os.popen('grep "total magnetization" '+logfile+' | tail -1','r')
-        s1 = p1.readlines()
-        p1.close()
-        p2 = os.popen('grep "absolute magnetization" '+logfile+' | tail -1','r')
-        s2 = p2.readlines()
-        p2.close()
+    #Adapted from ase-espresso interface written by Johannes Voss
+    #https://github.com/vossjo/ase-espresso/wiki
+    '''
+    Returns total and absolute magnetization after SCF run.
+    Units are Bohr magnetons per unit cell, directly read from PWscf log.
+    Returns (0,0) if no magnetization is found in log.
+    '''
+    p1 = os.popen('grep "total magnetization" '+logfile+' | tail -1','r')
+    s1 = p1.readlines()
+    p1.close()
+    p2 = os.popen('grep "absolute magnetization" '+logfile+' | tail -1','r')
+    s2 = p2.readlines()
+    p2.close()
 
-        if len(s1) == 0:
-            assert len(s2) == 0
-            return (0,0)
-        else:
-            assert len(s1) == 1
-            assert len(s2) == 1
-            s1_ = s1[0].split("=")[-1]
-            totmag = float(s1_.split("Bohr")[0])
-            s2_ = s2[0].split("=")[-1]
-            absmag = float(s2_.split("Bohr")[0])
-            return(totmag, absmag)
-
+    if len(s1) == 0:
+        assert len(s2) == 0
+        return (0,0)
+    else:
+        assert len(s1) == 1
+        assert len(s2) == 1
+        s1_ = s1[0].split("=")[-1]
+        totmag = float(s1_.split("Bohr")[0])
+        s2_ = s2[0].split("=")[-1]
+        absmag = float(s2_.split("Bohr")[0])
+        return(totmag, absmag)
 
 def create_single_job(workdir, atoms, template, subs, jobname='input.py',
         submitargs=None):
@@ -421,10 +422,10 @@ def create_single_job(workdir, atoms, template, subs, jobname='input.py',
 
     curdir = os.getcwd()
     if not os.path.isdir(workdir):
-	os.makedirs(workdir)
+        os.makedirs(workdir)
     os.chdir(workdir)
-    if atoms:	
-    	ase.io.write(subs['atoms'], atoms)
+    if atoms:
+        ase.io.write(subs['atoms'], atoms)
     t = AseTemplate(template)
     t.render_and_write(subs, output=jobname)
     #if submitargs:
