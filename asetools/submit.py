@@ -86,9 +86,9 @@ def main(args=None):
                         type=int,
                         default=16,
                         help='Number of cores. Default=16 (one full node)')
-    parser.add_argument('--projectno',
+    parser.add_argument('--account',
                         default='nn4683k',
-                        help='NOTUR project number. Retrieve it with PROJECT command.')
+                        help='Project account. Retrieve it with PROJECT command.')
     parser.add_argument("-q",
                         "--queue",
                         default="default",
@@ -189,7 +189,7 @@ def write_slurm_script(args):
     with open(args['script_name'], 'w') as script:
         script.write("#!/bin/bash\n")
         script.write("#SBATCH --job-name={}\n".format(args['workdir'][-8:]))
-        script.write("#SBATCH --account={}\n".format(args["projectno"]))
+        script.write("#SBATCH --account={}\n".format(args['account']))
         script.write("#SBATCH --time={}\n".format(args["walltime"]))
         script.write("#SBATCH --mem-per-cpu={}\n".format(args['mem_per_cpu']))
         script.write("#SBATCH --nodes={0} --ntasks-per-node={1}\n".format(args['nodes'], args['ppn']))
