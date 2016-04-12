@@ -67,7 +67,8 @@ class JobManager(object):
             if thermo == 'Harmonic':
                 out.append(HarmonicThermo(vibenergies, energy))
             elif thermo == 'IdealGas':
-                out.append(IdealGasThermo(vibenergies, kwargs.pop('geometry'), energy, **kwargs))
+                atoms = get_atoms(self.session, system.id)
+                out.append(IdealGasThermo(vibenergies, kwargs.pop('geometry'), potentialenergy=energy, atoms=atoms, **kwargs))
 
         return out
 
