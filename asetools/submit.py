@@ -142,21 +142,29 @@ def submit_pbs(args):
     '''
 
     with open(args['script_name'], 'w') as script:
-        script.write("#PBS -S /bin/bash\n")
+        #script.write("#PBS -S /bin/bash\n")
+	script.write("#PBS -A {0}\n".format(args['account']))
         if args['HOST'] != "":
             script.write("#PBS -l nodes={0}:ppn={1}\n".format(args['HOST'], args['ppn']))
         else:
             script.write("#PBS -l nodes={0}:ppn={1}\n".format(args['nodes'], args['ppn']))
-        script.write("#PBS -l walltime={0}\n\n".format(args['walltime']))
-        if args['lib_paths'] is not None and args['lib_paths'] != "":
+	script.write("#PBS -l pmem={}\n".format(args['mem_per_cpu']))
+        script.write("#PBS -l walltime={}\n".format(args['walltime']))
+        if 'lib_paths' in args and args['lib_paths'] != "":
             script.write('export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:{0:<s}\n\n'.format(":".join(args['lib_paths'])))
-        if args['vars']:
-            for name, value in args['vars']:
-                script.write("export {n}={v}\n".format(n=name, v=value))
         script.write("#PBS -N {}\n".format(args["jobname"]))
         if args["queue"] != "default":
             script.write("#PBS -q {}\n".format(args["queue"]))
-        script.write("cd $PBS_O_WORKDIR\n")
+	script.write("#PBS -j oe\n")
+	script.write("#PBS -N {}\n\n".format(args['jobname']))
+	if args['program'] in args['jobenv']:
+	    script.write(args['jobenv'][args['program']]+'\n\n')
+	else:
+	   sys.exit('Dont know the job environment for program: {0}. Exiting...'.format(args['program']))
+	if args['vars']:
+            for name, value in args['vars']:
+                script.write("export {n}={v}\n".format(n=name, v=value))
+        script.write("\ncd $PBS_O_WORKDIR\n")
         if args['scratch']:
             wrkdir = os.path.join(args['scratch'], args['jobname'])
             script.write("mkdir -p {}\n".format(wrkdir))
@@ -165,12 +173,15 @@ def submit_pbs(args):
                 files += ' ' + ' '.join(args['extrafiles'])
             script.write('cp -t {0} {1}\n'.format(wrkdir, files))
             script.write('cd {0}\n'.format(wrkdir))
-        if args['nativeqe']:
+        if args['program'] == 'nativeqe':
             execute = "\n/share/apps/bin/mpirun -np {0} {1:<s} -in {2:<s}\n".format(
                         args['ppn'], args['executable'], args['input'])
         else:
-            execute = "\n{p:s} {i:s}".format(p=args['python'], i=args['input'])
+            execute = "\n{p:s} {i:s}\n".format(p=args['python'], i=args['input'])
+	script.write("\n# Do the work")
         script.write(execute)
+	script.write("\n# update the list of completed jobs\n")
+        script.write('echo `date +%F_%R` $JOB_ID $SUBMITDIR $JOB_NAME >> $HOME/completed_jobs.dat\n')
 
     # submit the job to the queue if requested
     if args['dryrun']:
