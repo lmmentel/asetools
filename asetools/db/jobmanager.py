@@ -62,7 +62,7 @@ class JobManager(object):
             vibset = self.session.query(VibrationSet).\
                                   filter(VibrationSet.name == vibsetname).\
                                   filter(VibrationSet.system_id == system.id).one()
-            vibenergies = vibset.vibenergies()
+            vibenergies = vibset.vibenergies
 
             if thermo == 'Harmonic':
                 out.append(HarmonicThermo(vibenergies, energy))
@@ -270,8 +270,8 @@ class JobManager(object):
             self.session.rollback()
 
     def update_vibs(self, systems, jobname, vibfile='vibenergies.pkl',
-                    vibname='PHVA', thermofile=None, T=298.15, verbose=False,
-                    jobstatus='finished', commit=True):
+                    vibname='PHVA', thermofile=None, T=298.15, p=100000,
+                    verbose=False, jobstatus='finished', commit=True):
         '''
         Update frequencies and thermochemistry in the database for the `systems`
         from the jobs with the name `jobname`.
@@ -288,7 +288,9 @@ class JobManager(object):
             thermofile : str
                 Name of the file with the Thermochemistry
             T : float
-                Temperature for thermochemistry calculation
+                Temperature for thermochemistry calculation in `K`
+            p : pressure
+                Pressure for thermochemistry calculation in `Pa`
             commit : bool
                 Flag to mark whether to commit changes or not
         '''
@@ -318,7 +320,7 @@ class JobManager(object):
                         mol.free_energy = thermo.get_gibbs_energy(T, verbose=verbose)
                         #mol.free_energy = thermo.get_helmholtz_energy(T, verbose=verbose)
                     elif thermoname == 'IdealGasThermo':
-                        mol.entropy = thermo.get_entropy(T, verbose=verbose)
+                        mol.entropy = thermo.get_entropy(T, p, verbose=verbose)
                         mol.enthalpy = thermo.get_enthalpy(T, verbose=verbose)
                         mol.free_energy = thermo.get_gibbs_energy(T, verbose=verbose)
                     else:
