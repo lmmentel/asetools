@@ -1,9 +1,9 @@
 from ase.io import read
 from ase.optimize import BFGS
-from espresso import espresso
+from espresso import Espresso
 from asetools import set_init_magmoms,smart_cell
 
-calc = espresso(pw=$pw,dw=$dw,
+calc = Espresso(pw=$pw,dw=$dw,
                 xc='$xc',
 		london=$grimme, #DFT-D2 dispersion correction
                 kpts = $kpts,

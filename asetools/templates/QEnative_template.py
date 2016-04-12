@@ -1,8 +1,8 @@
 from ase.io import write,read
-from espresso import espresso
+from espresso import Espresso
 from asetools import set_init_magmoms
 
-calc = espresso(pw=$pw,dw=$dw,
+calc = Espresso(pw=$pw,dw=$dw,
                 xc='$xc',
                 kpts = $kpts,
 		london = $grimme,

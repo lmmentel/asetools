@@ -4,7 +4,7 @@ import numpy as np
 from ase.optimize import BFGS,FIRE
 from ase.visualize import view
 from asetools import set_init_magmoms
-from espresso.multiespresso import multiespresso
+from espresso.multiespresso import Multiespresso
 
 nimage = $nimage
 
@@ -13,7 +13,7 @@ final = read('$final')
 write('initial.traj',initial)
 write('final.traj',final)
 
-calcs = multiespresso(ncalc=nimage,outdirprefix='neb',pw=$pw,dw=$dw,
+calcs = Multiespresso(ncalc=nimage,outdirprefix='neb',pw=$pw,dw=$dw,
     xc='$xc',kpts=$kpts,spinpol=$spinpol)
 
 images = [initial]

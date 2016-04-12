@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 #Template input for a structure and cell relaxation with Quantum Espresso
 from ase.io import read, write
-from espresso import espresso
+from espresso import Espresso
 from asetools import set_init_magmoms
 
-calc = espresso(pw=$pw,dw=$dw,
+calc = Espresso(pw=$pw,dw=$dw,
                 xc='$xc',
                 london=$grimme, #DFT-D2 dispersion correction
                 kpts = $kpts,

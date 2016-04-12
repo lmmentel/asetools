@@ -1,8 +1,7 @@
 #!/usr/bin/env python
-import numpy as np
 from ase.io import read
-import pickle,os
-from espresso import espresso
+import pickle
+from espresso import Espresso
 from asetools import set_init_magmoms
 
 atoms = read('$readpath')

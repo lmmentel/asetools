@@ -1,6 +1,6 @@
 import numpy as np
 from ase.io import read
-from espresso.vibespresso import vibespresso
+from espresso.vibespresso import Vibespresso
 from ase.vibrations import Vibrations
 from ase.thermochemistry import IdealGasThermo,rotationalinertia
 import os,pickle
@@ -16,7 +16,7 @@ if indices == []: #default: include all atoms in calculation
    indices = range(atoms.get_number_of_atoms())
 
 # Create vibration calculator
-calc = vibespresso(pw=$pw,dw=$dw,
+calc = Vibespresso(pw=$pw,dw=$dw,
                 xc='$xc',
                 kpts = $kpts,
 		london = $grimme, #DFT-D2 dispersion correction
