@@ -27,9 +27,9 @@ def query_yes_no(question, default="yes"):
 
     The "answer" return value is one of "yes" or "no".
     """
-    valid = {"yes":True,   "y":True,  "ye":True,
-             "no":False,     "n":False}
-    if default == None:
+    valid = {"yes":True, "y":True, "ye":True,
+             "no":False, "n":False}
+    if default is None:
         prompt = " [y/n] "
     elif default == "yes":
         prompt = " [Y/n] "
@@ -40,7 +40,7 @@ def query_yes_no(question, default="yes"):
 
     while True:
         sys.stdout.write(question + prompt)
-        choice = raw_input().lower()
+        choice = input().lower()
         if default is not None and choice == '':
             return valid[default]
         elif choice in valid:
@@ -74,7 +74,10 @@ def main(args=None):
                         help="additional files that need to be copied to the node/scratch")
     parser.add_argument('--program',
                         default='pythonqe',
-                        help='Specify which program to run. pythonqe: prepares script for running quantum espresso through the ase-espresso interface. nativeqe: runs internal espresso routines. manual: specify executions manually. Default: pythonqe.')
+                        help='Specify which program to run. pythonqe: prepares script for running '
+                        'quantum espresso through the ase-espresso interface. nativeqe: '
+                        'runs internal espresso routines. manual: specify executions manually. '
+                        'Default: pythonqe.')
     parser.add_argument('-m',
                         '--mem-per-cpu',
                         default='3700M',
@@ -98,9 +101,9 @@ def main(args=None):
                         help="walltime in the format HH:MM:SS, default=120:00:00")
 
     if args: #arguments passed from other python code
-	    args = vars(parser.parse_args(args))
+        args = vars(parser.parse_args(args))
     else:  #run from command line
-	    args = vars(parser.parse_args())
+        args = vars(parser.parse_args())
 
     args['workdir'] = os.getcwd()
     args['jobname'] = os.path.splitext(args["input"])[0]
@@ -134,7 +137,6 @@ def submit(args):
     else:
         raise NotImplementedError("support for '{0:s}' is not implemented \
                 supported batch systems are: {1:s}".format(args['batch'], ", ".join(submitters.keys())))
-   
 
 def submit_pbs(args):
     '''
@@ -204,10 +206,10 @@ def write_slurm_script(args):
         script.write("#SBATCH --nodes={0} --ntasks-per-node={1}\n".format(args['nodes'], args['ppn']))
         script.write("#SBATCH --mail-type=FAIL\n")
         script.write("\n# Set up job environment\n")
-	if args['program'] in ['pythonqe','nativeqe']:
+        if args['program'] in ['pythonqe','nativeqe']:
            script.write("source {}\n".format(os.path.join(args["home"], ".bash_profile")))
         script.write("source /cluster/bin/jobsetup\n")
-	if args['cleanup'] is not None:
+        if args['cleanup'] is not None:
                 script.write("\n# Automatic copying of files and directories back to $SUBMITDIR\n")
                 script.write("cleanup \"{}\"\n".format(args['cleanup']))
         script.write("\n# Do the work\n")
@@ -225,22 +227,22 @@ def submit_slurm(args):
         args['ppn'] = 16
 
     if args['program'] == 'pythonqe':
-	args['commands'] = "module load python2 espresso/5.0.3_beef\npython " + args["input"]
-	args['cleanup'] = None
+        args['commands'] = "module load python2 espresso/5.0.3_beef\npython " + args["input"]
+        args['cleanup'] = None
     elif args['program'] == 'nativeqe':
         args['commands'] = '\n'.join(['module load espresso/5.0.3_beef','cp *.inp $SCRATCH','cd $SCRATCH','mpirun pw.x < pw.inp > pw.out','mpirun ph.x < ph.inp > ph.out','mpirun dynmat.x < dynmat.inp > dynmat.out']) #5.0.3 is 5.0.2 with openmpi1.8
         args['cleanup'] = 'cp -r $SCRATCH/pw.out $SCRATCH/dyn.traj $SCRATCH/ph.out $SCRATCH/dynmat.dat $SCRATCH/dynmat.out $SCRATCH/dynmat.mold $SCRATCH/calc.save $SCRATCH/_ph0/calc.phsave $SUBMITDIR'
     elif args['program']  == 'lammps':
-	commands = ['module purge','module load intelmpi.intel']
-	files = ['$HOME/bin/lmp.double',args['input']]
-	if args['extrafiles']:	
-	   files += args['extrafiles']
-	commands += ['cp '+' '.join(files)+' $SCRATCH']
-	commands += ['cd $SCRATCH','mpirun -env KMP_AFFINITY scatter -env OMP_NUM_THREADS 1 -np {0} ./lmp.double -in {1} -screen none ##-log none'.format(args['ppn'],args['input'])]
-	args['commands'] = '\n'.join(commands)
+        commands = ['module purge','module load intelmpi.intel']
+        files = ['$HOME/bin/lmp.double',args['input']]
+        if args['extrafiles']:
+            files += args['extrafiles']
+        commands += ['cp '+' '.join(files)+' $SCRATCH']
+        commands += ['cd $SCRATCH','mpirun -env KMP_AFFINITY scatter -env OMP_NUM_THREADS 1 -np {0} ./lmp.double -in {1} -screen none ##-log none'.format(args['ppn'],args['input'])]
+        args['commands'] = '\n'.join(commands)
 
-	args['cleanup'] = 'cp -r $SCRATCH/* $SUBMITDIR'
-	
+        args['cleanup'] = 'cp -r $SCRATCH/* $SUBMITDIR'
+
     if os.path.exists(args['script_name']):
         message = 'Run script: {} exists, overwrite?'.format(args['script_name'])
         if query_yes_no(message):
@@ -253,7 +255,7 @@ def submit_slurm(args):
 
     # submit the job to the queue if requested
     if args['dryrun']:
-        print("NOT submitting to the queue\nbye...".format(args['script_name']))
+        print("NOT submitting {} to the queue\nbye...".format(args['script_name']))
     else:
         output = subprocess.check_output(["sbatch", args['script_name']])
 
@@ -262,12 +264,12 @@ def submit_slurm(args):
         if m:
             pid = str(m.group(1))
             with open(os.path.join(args['home'], "submitted_jobs.dat"), "a") as dat:
-		        dat.write('{0} {1:>12s} {2:>20s}\n'.format(
-                   pid, os.getcwd(), str(datetime.now().strftime("%Y-%m-%d+%H:%M:%S"))))
+                dat.write('{0} {1:>12s} {2:>20s}\n'.format(
+                    pid, os.getcwd(), str(datetime.now().strftime("%Y-%m-%d+%H:%M:%S"))))
         else:
             pid = None
 
-	print("Submitted batch job {0}".format(pid))
+        print("Submitted batch job {0}".format(pid))
 
 def header(args, skipped):
 

@@ -27,20 +27,15 @@ from sphinx import apidoc
 if sys.version_info.major == 3:
     from unittest.mock import MagicMock    # if python ver >= 3.3
 else:
-    from mock import Mock as MagicMock     # if python ver 2.7
+    from mock import MagicMock     # if python ver 2.7
 
-
-class Mock(MagicMock):
-    @classmethod
-    def __getattr__(cls, name):
-        return Mock()
 
 MOCK_MODULES = ['argparse', 'numpy', 'scipy', 'scipy.optimize', 'scipy.constants',
                 'scipy.constants.value', 'pandas', 'mendeleev', 'ase', 'ase.io',
                 'ase.io.cif', 'ase.lattice', 'ase.lattice.spacegroup',
                 'ase.lattice.spacegroup.cell', 'ase.thermochemistry']
 
-sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
+sys.modules.update((mod_name, MagicMock()) for mod_name in MOCK_MODULES)
 
 __location__ = os.path.join(os.getcwd(), os.path.dirname(
     inspect.getfile(inspect.currentframe())))
