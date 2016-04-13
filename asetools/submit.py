@@ -1,21 +1,22 @@
-#!/usr/bin/env python
 
-'''Script used to generate the submission script for batch systems'''
+'''Utilities used to generate the submission script for batch systems'''
 
-from __future__ import print_function
+from __future__ import print_function, absolute_import
 
-import numpy as np
+
 import os
 import sys
 import re
-import socket
 import subprocess
-import operator
-from asetools import get_template, get_config
 from argparse import ArgumentParser
 from datetime import datetime
-from string import Template
+import numpy as np
 
+from .asetools import get_config
+
+# keep backwards compatibility with python2
+if sys.version[0] == "3":
+    raw_input = input
 
 def query_yes_no(question, default="yes"):
     """Ask a yes/no question via input() and return their answer.
@@ -40,7 +41,7 @@ def query_yes_no(question, default="yes"):
 
     while True:
         sys.stdout.write(question + prompt)
-        choice = input().lower()
+        choice = raw_input().lower()
         if default is not None and choice == '':
             return valid[default]
         elif choice in valid:
@@ -135,13 +136,14 @@ def submit(args):
     if submitter is not None:
         submitter(args)
     else:
-        raise NotImplementedError("support for '{0:s}' is not implemented \
-                supported batch systems are: {1:s}".format(args['batch'], ", ".join(submitters.keys())))
+        raise NotImplementedError("support for '{0:s}' is not implemented, supported batch "
+            "systems are: {1:s}".format(args['batch'], ", ".join(submitters.keys())))
 
 def submit_pbs(args):
     '''
     Write the run script for PBS and submit it to the queue.
     '''
+
     if os.path.exists(args['script_name']):
         message = 'Run script: {} exists, overwrite?'.format(args['script_name'])
         if query_yes_no(message):
@@ -151,23 +153,17 @@ def submit_pbs(args):
     else:
         print('Creating job script: {0}'.format(args['script_name']))
         write_pbs_script(args)
-    
+
     # submit the job to the queue if requested
     if args['dryrun']:
         print("NOT submitting {} to the queue\nbye...".format(args['script_name']))
     else:
-        #print("Created job script: {0}\nsubmitting to the queue".format(args['script_name']))
-        #sublog = open(args['jobname'] + ".sublog", 'w')
-        #subprocess.Popen(["qsub", args['script_name']], stdout=sublog, stderr=sublog)
-        #sublog.close()
-	output = subprocess.check_output(["qsub", args['script_name']])
-	#with open(args['jobname'] + ".sublog", 'w') as sublog:
-	#  sublog.write(output)
+        output = subprocess.check_output(["qsub", args['script_name']])
 
-	patt = re.compile(r"(\d+)\.")
-        m = patt.search(output)
-        if m:
-            pid = str(m.group(1))
+        patt = re.compile(r"(\d+)\.")
+        match = patt.search(output)
+        if match:
+            pid = str(match.group(1))
             with open(os.path.join(args['home'], "submitted_jobs.dat"), "a") as dat:
                 dat.write('{0} {1:>12s} {2:>20s}\n'.format(
                     pid, os.getcwd(), str(datetime.now().strftime("%Y-%m-%d+%H:%M:%S"))))
@@ -179,25 +175,25 @@ def submit_pbs(args):
 def write_pbs_script(args):
     with open(args['script_name'], 'w') as script:
         #script.write("#PBS -S /bin/bash\n")
-	script.write("#PBS -A {0}\n".format(args['account']))
+        script.write("#PBS -A {0}\n".format(args['account']))
         if args['HOST'] != "":
             script.write("#PBS -l nodes={0}:ppn={1}\n".format(args['HOST'], args['ppn']))
         else:
             script.write("#PBS -l nodes={0}:ppn={1}\n".format(args['nodes'], args['ppn']))
-	script.write("#PBS -l pmem={}\n".format(args['mem_per_cpu']))
+        script.write("#PBS -l pmem={}\n".format(args['mem_per_cpu']))
         script.write("#PBS -l walltime={}\n".format(args['walltime']))
         if 'lib_paths' in args and args['lib_paths'] != "":
             script.write('export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:{0:<s}\n\n'.format(":".join(args['lib_paths'])))
         if args["queue"] != "default":
             script.write("#PBS -q {}\n".format(args["queue"]))
-	script.write("#PBS -j oe\n")
-	script.write("#PBS -N {}\n\n".format(args['workdir'][-8:]))
-	if args['program'] in args['jobenv']:
-	    script.write(args['jobenv'][args['program']]+'\n\n')
-	else:
-	   sys.exit('Dont know the job environment for program: {0}. Exiting...'.format(args['program']))
-	script.write("mpdboot -n {0} -f $PBS_NODEFILE\n".format(args['nodes']))
-	if args['vars']:
+        script.write("#PBS -j oe\n")
+        script.write("#PBS -N {}\n\n".format(args['workdir'][-8:]))
+        if args['program'] in args['jobenv']:
+            script.write(args['jobenv'][args['program']]+'\n\n')
+        else:
+            sys.exit('Dont know the job environment for program: {0}. Exiting...'.format(args['program']))
+        script.write("mpdboot -n {0} -f $PBS_NODEFILE\n".format(args['nodes']))
+        if args['vars']:
             for name, value in args['vars']:
                 script.write("export {n}={v}\n".format(n=name, v=value))
         script.write("\ncd $PBS_O_WORKDIR\n")
@@ -214,12 +210,10 @@ def write_pbs_script(args):
                         args['ppn'], args['executable'], args['input'])
         else:
             execute = "\n{p:s} {i:s}\n".format(p=args['python'], i=args['input'])
-	script.write("\n# Do the work")
+        script.write("\n# Do the work")
         script.write(execute)
-	script.write("\n# update the list of completed jobs\n")
+        script.write("\n# update the list of completed jobs\n")
         script.write('echo `date +%F_%R` $JOB_ID $SUBMITDIR $JOB_NAME >> $HOME/completed_jobs.dat\n')
-
-
 
 def write_slurm_script(args):
     'Write a SLURM run script with variables from args dict'
