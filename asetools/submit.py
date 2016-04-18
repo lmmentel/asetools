@@ -65,9 +65,9 @@ def main(args=None):
                        type=int,
                        default="1",
                        help="number of nodes, default=1")
-    parser.add_argument('-d', '--dryrun',
+    parser.add_argument('-d', '--nosubmit',
                         action='store_true',
-                        help='Create sbatch script, but do not submit.')
+                        help='Create job script, but do not submit.')
     parser.add_argument("-e",
                         "--extrafiles",
                         nargs="+",
@@ -77,7 +77,7 @@ def main(args=None):
                         default='pythonqe',
                         help='Specify which program to run. pythonqe: prepares script for running '
                         'quantum espresso through the ase-espresso interface. nativeqe: '
-                        'runs internal espresso routines. manual: specify executions manually. '
+                        'runs internal espresso routines. To be defined in $HOME/.asetools_site_config.py.'
                         'Default: pythonqe.')
     parser.add_argument('-m',
                         '--mem-per-cpu',
@@ -122,8 +122,8 @@ def submit(args):
         arguments specifying the job
     '''
 
-    submitters = {"pbs" : submit_pbs,
-                  "slurm" : submit_slurm,
+    submitters = {"pbs" : {'directives_writer':create_pbs_directives, 'executable':'qsub'},
+                  "slurm" : {'directives_writer': create_slurm_directives, 'executable':'sbatch'}
                  }
 
     # get the site configuration from the $HOME/.asetools_site_config.py file
@@ -134,31 +134,38 @@ def submit(args):
 
     submitter = submitters.get(args['batch'].lower(), None)
     if submitter is not None:
-        submitter(args)
+        write_and_submit_script(args,submitter)
     else:
         raise NotImplementedError("support for '{0:s}' is not implemented, supported batch "
             "systems are: {1:s}".format(args['batch'], ", ".join(submitters.keys())))
 
-def submit_pbs(args):
+def write_and_submit_script(args,submitter):
     '''
-    Write the run script for PBS and submit it to the queue.
+    Writes and submits the job script and saves the job specs in $HOME/submitted_jobs.dat.
+
+    Args:
+	args: (dict)
+	  arguments specifying the job 
+	submitter: (dict)
+	  specifications of the batch submitter. For now should include 'directives_writer': name of function to write the batch directives, and  'executable': the command responsible for submission.
+    
     '''
 
     if os.path.exists(args['script_name']):
-        message = 'Run script: {} exists, overwrite?'.format(args['script_name'])
+        message = 'Job script: {} exists, overwrite?'.format(args['script_name'])
         if query_yes_no(message):
-            write_pbs_script(args)
+            write_job_script(args,submitter['directives_writer'])
         else:
             print('Using existing job script: {0}, without changes'.format(args['script_name']))
     else:
         print('Creating job script: {0}'.format(args['script_name']))
-        write_pbs_script(args)
+        write_job_script(args,submitter['directives_writer'])
 
     # submit the job to the queue if requested
-    if args['dryrun']:
+    if args['nosubmit']:
         print("NOT submitting {} to the queue\nbye...".format(args['script_name']))
     else:
-        output = subprocess.check_output(["qsub", args['script_name']])
+        output = subprocess.check_output([submitter['executable'], args['script_name']])
 
         patt = re.compile(r"(\d+)\.")
         match = patt.search(output)
@@ -172,131 +179,95 @@ def submit_pbs(args):
 
         print("Submitted batch job {0}".format(pid))
 
-def write_pbs_script(args):
-    with open(args['script_name'], 'w') as script:
-        #script.write("#PBS -S /bin/bash\n")
-        script.write("#PBS -A {0}\n".format(args['account']))
+
+def write_job_script(args,directives_writer):
+   '''
+   Writes the job script for the batch system.
+
+   Args:
+	args: (dict)
+	    arguments specifying the job.
+	directives_writer: (function)
+	    function creating a string of directives for the batch system.
+
+   '''
+   if not args['program'] in args['jobspec']:
+       	sys.exit('Dont know the job specifications for program: {0}. Exiting...'.format(args['program']))
+   else:
+        jobspec = args['jobspec'][args['program']]
+   	with open(args['script_name'], 'w') as script:
+	    script.write("#!/bin/bash\n")
+	    script.write(directives_writer(args)+'\n')
+	    if 'lib_paths' in args and args['lib_paths'] != "":
+           	script.write('export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:{0:<s}\n\n'.format(":".join(args['lib_paths'])))
+            if 'modules' in jobspec:
+            	script.write(jobspec['modules']+'\n')
+            if args['vars']:
+            	for name, value in args['vars']:
+                	script.write("export {n}={v}\n".format(n=name, v=value))
+            if 'precmd' in jobspec:
+            	script.write('\n'+jobspec['precmd'].format(**args)+'\n')
+            if args['scratch']:
+            	wrkdir = os.path.join(args['scratch'], args['jobname'])
+            	script.write("mkdir -p {}\n".format(wrkdir))
+            	files = args['input']
+            	if args['extrafiles']:
+                	files += ' ' + ' '.join(args['extrafiles'])
+            	script.write('cp -t {0} {1}\n'.format(wrkdir, files))
+            	script.write('cd {0}\n'.format(wrkdir))
+            script.write("\n# Do the work\n")
+            script.write(jobspec['cmd'].format(**args)+'\n')
+            if 'postcmd' in jobspec:
+           	script.write(jobspec['postcmd'])
+
+def create_pbs_directives(args):
+        '''
+	Creates the PBS directives for a job script.
+
+	Args:
+	    args: (dict)
+		arguments specifying the job.
+	
+	Returns:
+	    directives: (str)
+                the PBS directives that can be written to a job script.
+	'''
+        directives = '\n'.join(["#PBS -N {}".format(args['workdir'][-8:]),
+        		     "#PBS -A {0}".format(args['account']),
+        		     "#PBS -l walltime={}".format(args['walltime']),
+        		     "#PBS -l pmem={}\n".format(args['mem_per_cpu'])
+			    ])
         if args['HOST'] != "":
-            script.write("#PBS -l nodes={0}:ppn={1}\n".format(args['HOST'], args['ppn']))
+            directives += "#PBS -l nodes={0}:ppn={1}\n".format(args['HOST'], args['ppn'])
         else:
-            script.write("#PBS -l nodes={0}:ppn={1}\n".format(args['nodes'], args['ppn']))
-        script.write("#PBS -l pmem={}\n".format(args['mem_per_cpu']))
-        script.write("#PBS -l walltime={}\n".format(args['walltime']))
-        if 'lib_paths' in args and args['lib_paths'] != "":
-            script.write('export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:{0:<s}\n\n'.format(":".join(args['lib_paths'])))
+            directives += "#PBS -l nodes={0}:ppn={1}\n".format(args['nodes'], args['ppn'])
         if args["queue"] != "default":
-            script.write("#PBS -q {}\n".format(args["queue"]))
-        script.write("#PBS -j oe\n")
-        script.write("#PBS -N {}\n\n".format(args['workdir'][-8:]))
-        if args['program'] in args['jobenv']:
-            script.write(args['jobenv'][args['program']]+'\n\n')
-        else:
-            sys.exit('Dont know the job environment for program: {0}. Exiting...'.format(args['program']))
-        script.write("mpdboot -n {0} -f $PBS_NODEFILE\n".format(args['nodes']))
-        if args['vars']:
-            for name, value in args['vars']:
-                script.write("export {n}={v}\n".format(n=name, v=value))
-        script.write("\ncd $PBS_O_WORKDIR\n")
-        if args['scratch']:
-            wrkdir = os.path.join(args['scratch'], args['jobname'])
-            script.write("mkdir -p {}\n".format(wrkdir))
-            files = args['input']
-            if args['extrafiles']:
-                files += ' ' + ' '.join(args['extrafiles'])
-            script.write('cp -t {0} {1}\n'.format(wrkdir, files))
-            script.write('cd {0}\n'.format(wrkdir))
-        if args['program'] == 'nativeqe':
-            execute = "\n/share/apps/bin/mpirun -np {0} {1:<s} -in {2:<s}\n".format(
-                        args['ppn'], args['executable'], args['input'])
-        else:
-            execute = "\n{p:s} {i:s}\n".format(p=args['python'], i=args['input'])
-        script.write("\n# Do the work")
-        script.write(execute)
-        script.write("\n# update the list of completed jobs\n")
-        script.write('echo `date +%F_%R` $JOB_ID $SUBMITDIR $JOB_NAME >> $HOME/completed_jobs.dat\n')
+            directives += "#PBS -q {}\n".format(args["queue"])
+        directives += "#PBS -j oe\n"
+	
+	return directives
 
-def write_slurm_script(args):
-    'Write a SLURM run script with variables from args dict'
+def create_slurm_directives(args):
+        '''
+	Creates the SLURM directives for a job script.
 
-    with open(args['script_name'], 'w') as script:
-        script.write("#!/bin/bash\n")
-        script.write("#SBATCH --job-name={}\n".format(args['workdir'][-8:]))
-        script.write("#SBATCH --account={}\n".format(args['account']))
-        script.write("#SBATCH --time={}\n".format(args["walltime"]))
-        script.write("#SBATCH --mem-per-cpu={}\n".format(args['mem_per_cpu']))
-        script.write("#SBATCH --nodes={0} --ntasks-per-node={1}\n".format(args['nodes'], args['ppn']))
-        script.write("#SBATCH --mail-type=FAIL\n")
-        script.write("\n# Set up job environment\n")
-        if args['program'] in ['pythonqe','nativeqe']:
-           script.write("source {}\n".format(os.path.join(args["home"], ".bash_profile")))
-        script.write("source /cluster/bin/jobsetup\n")
-        if args['cleanup'] is not None:
-                script.write("\n# Automatic copying of files and directories back to $SUBMITDIR\n")
-                script.write("cleanup \"{}\"\n".format(args['cleanup']))
-        script.write("\n# Do the work\n")
-        script.write("{}\n".format(args['commands']))
-        script.write("\n# update the list of completed jobs\n")
-        script.write('echo `date +%F_%R` $JOB_ID $SUBMITDIR $JOB_NAME >> $HOME/completed_jobs.dat\n')
-
-def submit_slurm(args):
-    '''
-    Write the run script for SLURM and submit it to the queue.
-    '''
-
-    if int(args["ppn"]) > 16:
-        args['nodes'] = int(np.ceil(int(args["ppn"])/16.0)) #NB: means that for >16 CPUs, the script will automatically fully allocate all nodes, i.e. up to 15 more CPUs than requested
-        args['ppn'] = 16
-
-    if args['program'] == 'pythonqe':
-        args['commands'] = "module load python2 espresso/5.0.3_beef\npython " + args["input"]
-        args['cleanup'] = None
-    elif args['program'] == 'nativeqe':
-        args['commands'] = '\n'.join(['module load espresso/5.0.3_beef','cp *.inp $SCRATCH','cd $SCRATCH','mpirun pw.x < pw.inp > pw.out','mpirun ph.x < ph.inp > ph.out','mpirun dynmat.x < dynmat.inp > dynmat.out']) #5.0.3 is 5.0.2 with openmpi1.8
-        args['cleanup'] = 'cp -r $SCRATCH/pw.out $SCRATCH/dyn.traj $SCRATCH/ph.out $SCRATCH/dynmat.dat $SCRATCH/dynmat.out $SCRATCH/dynmat.mold $SCRATCH/calc.save $SCRATCH/_ph0/calc.phsave $SUBMITDIR'
-    elif args['program']  == 'lammps':
-        commands = ['module purge','module load intelmpi.intel']
-        files = ['$HOME/bin/lmp.double',args['input']]
-        if args['extrafiles']:
-            files += args['extrafiles']
-        commands += ['cp '+' '.join(files)+' $SCRATCH']
-        commands += ['cd $SCRATCH','mpirun -env KMP_AFFINITY scatter -env OMP_NUM_THREADS 1 -np {0} ./lmp.double -in {1} -screen none ##-log none'.format(args['ppn'],args['input'])]
-        args['commands'] = '\n'.join(commands)
-
-        args['cleanup'] = 'cp -r $SCRATCH/* $SUBMITDIR'
-
-    if os.path.exists(args['script_name']):
-        message = 'Run script: {} exists, overwrite?'.format(args['script_name'])
-        if query_yes_no(message):
-            write_slurm_script(args)
-        else:
-	        print('Using existing job script: {0}, without changes'.format(args['script_name']))
-    else:
-        print('Creating job script: {0}'.format(args['script_name']))
-        write_slurm_script(args)
-
-    # submit the job to the queue if requested
-    if args['dryrun']:
-        print("NOT submitting {} to the queue\nbye...".format(args['script_name']))
-    else:
-        output = subprocess.check_output(["sbatch", args['script_name']])
-
-        patt = re.compile(r"Submitted batch job\s*(\d+)")
-        m = patt.search(output)
-        if m:
-            pid = str(m.group(1))
-            with open(os.path.join(args['home'], "submitted_jobs.dat"), "a") as dat:
-                dat.write('{0} {1:>12s} {2:>20s}\n'.format(
-                    pid, os.getcwd(), str(datetime.now().strftime("%Y-%m-%d+%H:%M:%S"))))
-        else:
-            pid = None
-
-        print("Submitted batch job {0}".format(pid))
-
-def header(args, skipped):
-
-    out = "{0:^16s} {1:^12s} {2:^20s}".format("Date", "Job ID", "Submit dir")
-    out += "".join(["{0:>15s}".format(k) for k in sorted(args.keys()) if not k in skipped])
-    return out
+	Args:
+	    args: (dict)
+		arguments specifying the job.
+	
+	Returns:
+	    directives: (str)
+		the SLURM directives that can be written to a job script.
+	'''
+        directives = '\n'.join(["#SBATCH --job-name={}".format(args['workdir'][-8:]),
+        		     "#SBATCH --account={}".format(args['account']),
+        		     "#SBATCH --time={}".format(args["walltime"]),
+        		     "#SBATCH --mem-per-cpu={}".format(args['mem_per_cpu']),
+        		     "#SBATCH --nodes={0} --ntasks-per-node={1}".format(args['nodes'], args['ppn']),
+        		     "#SBATCH --mail-type=FAIL\n"
+			     ])
+	
+	return directives
 
 if __name__ == "__main__":
     main(None)
