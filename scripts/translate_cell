@@ -30,6 +30,9 @@ if __name__ == "__main__":
                         help="the scaling factor for the c-vector (from origo)")
     parser.add_argument("--origo", default=(0.5, 0.5, 0.5), type=coords,
                         help="Position of origo of the new cell in scaled coordinates")
+    parser.add_argument("-t", "--tolerance", default=0.01, type=float,
+                        help="Determines what is defined as a plane. All atoms within tolerance "
+                        "Angstroms from a given plane will be considered to belong to that plane.")
     args = parser.parse_args()
 
     base, ext = os.path.splitext(args.input)
@@ -38,6 +41,6 @@ if __name__ == "__main__":
         args.output = base + "_translated" + ext
 
     mol = io.read(args.input)
-    new_mol = cut(mol, a=(args.x, 0, 0), b=(0, args.y, 0), c=(0, 0, args.z), origo=args.origo)
+    new_mol = cut(mol, a=(args.x, 0, 0), b=(0, args.y, 0), c=(0, 0, args.z), origo=args.origo, tolerance=args.tolerance)
     io.write(args.output, new_mol)
 
