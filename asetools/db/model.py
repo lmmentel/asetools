@@ -181,9 +181,12 @@ class DBCalculator(ProxiedDictMixin, Base):
         for example, ``mode='scf'`` will be stored as mode='"scf"'``
         '''
 
+        # a list of arguments that are not: str, int, float or bool
+        nonbasic = ['convergence', 'kptshift', 'dipole', 'field', 'output']
+
         out = {}
         for k, v in self.attributes.items():
-            if isinstance(v.value, str):
+            if isinstance(v.value, str) and not k in nonbasic:
                 out[k] = "'{}'".format(v.value)
             else:
                 out[k] = v.value
