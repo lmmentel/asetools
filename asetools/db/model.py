@@ -2,7 +2,11 @@
 
 ''' a database for storing the ase atoms abjects'''
 
-from __future__ import print_function, division
+from __future__ import print_function, division, unicode_literals
+
+from builtins import (bytes, dict, int, list, object, range, str,
+                      ascii, chr, hex, input, next, oct, open,
+                      pow, round, super, filter, map, zip)
 
 from operator import attrgetter
 import datetime
@@ -168,6 +172,22 @@ class DBCalculator(ProxiedDictMixin, Base):
     @classmethod
     def with_attr(self, key, value):
         return self.attributes.any(key=key, value=value)
+
+    def get_arguments(self):
+        '''
+        Return a dict with calculator init arguments (stored as attributes).
+
+        String values are surrounded by quotes since the attributes will be rendered to a template
+        for example, ``mode='scf'`` will be stored as mode='"scf"'``
+        '''
+
+        out = {}
+        for k, v in self.attributes.items():
+            if isinstance(v, str):
+                out[k] = "'{}'".format(v)
+            else:
+                out[k] = v
+        return out
 
     def __repr__(self):
 
