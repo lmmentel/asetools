@@ -183,10 +183,10 @@ class DBCalculator(ProxiedDictMixin, Base):
 
         out = {}
         for k, v in self.attributes.items():
-            if isinstance(v, str):
-                out[k] = "'{}'".format(v)
+            if isinstance(v.value, str):
+                out[k] = "'{}'".format(v.value)
             else:
-                out[k] = v
+                out[k] = v.value
         return out
 
     def __repr__(self):
