@@ -2,7 +2,7 @@
 
 ''' a database for storing the ase atoms abjects'''
 
-from __future__ import print_function, division, unicode_literals
+from __future__ import print_function, division, unicode_literals, absolute_import
 
 from builtins import (bytes, dict, int, list, object, range, str,
                       ascii, chr, hex, input, next, oct, open,
@@ -22,7 +22,7 @@ from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.hybrid import hybrid_property
 
-from asetools import AseTemplate
+from ..asetools import AseTemplate
 # code  below is taken from:
 # http://docs.sqlalchemy.org/en/latest/_modules/examples/vertical/dictlike-polymorphic.html
 

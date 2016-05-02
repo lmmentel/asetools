@@ -2,8 +2,7 @@
 
 '''A module providing methods for communication between ASE and the database'''
 
-#from __future__ import unicode_literals, print_function, division
-from __future__ import print_function, division
+from __future__ import print_function, division, absolute_import, unicode_literals
 
 import argparse
 import json
@@ -13,9 +12,11 @@ import pandas as pd
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import numpy as np
+
 import ase.io
 from ase import Atoms
 from ase.lattice.spacegroup.cell import cellpar_to_cell, cell_to_cellpar
+
 from .model import Base, DBAtom, System, DBTemplate, DBCalculator, Vibration, VibrationSet
 
 def get_session(dbpath, echo=False):

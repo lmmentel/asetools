@@ -2,7 +2,7 @@
 
 '''A module with methods for managing jobs through a database'''
 
-from __future__ import print_function, division
+from __future__ import print_function, division, unicode_literals
 
 import os
 import pickle
@@ -26,7 +26,7 @@ def sanitizestr(value, repd=None, keepchars=None):
         keepchars = ('_', '.', '+', '-')
 
     rtable = maketrans(''.join(repd.keys()), ''.join(repd.values()))
-    value = value.translate(rtable)
+    value = str(value).translate(rtable)
 
     value = "".join(c for c in value if c.isalnum() or c in keepchars).rstrip()
     return value
