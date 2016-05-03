@@ -108,8 +108,10 @@ class PolymorphicVerticalProperty(object):
                 if attribute is not None
             ]
             return case(whens, self.cls.type, null())
+
         def __eq__(self, other):
             return self._case() == cast(other, String)
+
         def __ne__(self, other):
             return self._case() != cast(other, String)
 
@@ -153,6 +155,7 @@ class DBCalculatorAttribute(PolymorphicVerticalProperty, Base):
     char_value = Column(UnicodeText, info={'type': (str, 'string')})
     boolean_value = Column(Boolean, info={'type': (bool, 'boolean')})
 
+
 class DBCalculator(ProxiedDictMixin, Base):
 
     'Database version of the Calculator class'
@@ -178,8 +181,9 @@ class DBCalculator(ProxiedDictMixin, Base):
         '''
         Return a dict with calculator init arguments (stored as attributes).
 
-        Attributes that are not basic types: ``int``, ``str``, ``float``, ``bool`` are stored as
-        strings and will be recovered to proper types with ``json.loads``
+        Attributes that are not basic types: ``int``, ``str``, ``float``,
+        ``bool`` are stored as strings and will be recovered to proper
+        types with ``json.loads``
         '''
 
         # a list of arguments that are not: str, int, float or bool
@@ -188,7 +192,7 @@ class DBCalculator(ProxiedDictMixin, Base):
         out = {}
         for k, v in self.attributes.items():
             if k == 'kpts':
-                if v = 'gamma':
+                if v == 'gamma':
                     out[k] = v.value
                 else:
                     out[k] == json.loads(v.value)
@@ -201,10 +205,11 @@ class DBCalculator(ProxiedDictMixin, Base):
     def __repr__(self):
 
         out = ["DBCalculator(id={0}, name='{1:s}', version={2:s}, description={3:s},".format(
-                self.id, self.name, self.version, self.description)]
+               self.id, self.name, self.version, self.description)]
         out.extend(["\t{0:s} = {1}".format(k, v) for k, v in self.attributes.items()])
 
         return "\n".join(out) + ')'
+
 
 class DBTemplateNote(PolymorphicVerticalProperty, Base):
     '''class to handle storing key-value pairs for the calculator attributes'''
@@ -221,6 +226,7 @@ class DBTemplateNote(PolymorphicVerticalProperty, Base):
     float_value = Column(Float, info={'type': (float, 'float')})
     char_value = Column(UnicodeText, info={'type': (str, 'string')})
     boolean_value = Column(Boolean, info={'type': (bool, 'boolean')})
+
 
 class DBTemplate(ProxiedDictMixin, Base):
 
@@ -257,6 +263,7 @@ class DBTemplate(ProxiedDictMixin, Base):
         out.extend(["\t{0:s} = {1}".format(k, v) for k, v in self.notes.items()])
 
         return "\n".join(out) + ')'
+
 
 class DBAtom(Base):
     '''Atom ORM object'''
@@ -330,10 +337,10 @@ class Job(Base):
         the information from the Job instance.
 
         Args:
-          repl : dict
-            Dictionary of items to be replaced in the template
-	  overwrite : bool
-	    If `True`, overwrite any files already present
+            repl : dict
+                Dictionary of items to be replaced in the template
+            overwrite : bool
+                If `True`, overwrite any files already present
         '''
 
         if os.path.exists(self.abspath):
@@ -353,6 +360,7 @@ class Job(Base):
                       for key in sorted(self.__dict__.keys())
                       if not key.startswith('_')]))
 
+
 class Vibration(Base):
 
     '''A single vibration'''
@@ -367,6 +375,7 @@ class Vibration(Base):
     def __repr__(self):
         return "<Vibration(vibrationset_id={0:d}, energy_real={1:15.8f}, energy_imag={2:15.8f})>".format(
                 self.vibrationset_id, self.energy_real, self.energy_imag)
+
 
 class VibrationSet(Base):
 
@@ -391,7 +400,7 @@ class VibrationSet(Base):
     def vibenergies(self):
         '''Return a numpy array with the vibration energies'''
 
-        values = [v.energy_real + 1j*v.energy_imag for v in self.vibrations]
+        values = [v.energy_real + 1j * v.energy_imag for v in self.vibrations]
         if len(values) > 0:
             return np.asarray(values, dtype=np.complex128)
         else:
@@ -400,6 +409,7 @@ class VibrationSet(Base):
     def __repr__(self):
         return "<VibrationSet(id={0:d}, name={1:s}, system_id={2:d}, atom_ids={3:s})>".format(
                 self.id, self.name, self.system_id, self.atom_ids)
+
 
 class SystemNote(PolymorphicVerticalProperty, Base):
     '''class to handle storing key-value pairs for the system'''
@@ -417,19 +427,20 @@ class SystemNote(PolymorphicVerticalProperty, Base):
     char_value = Column(UnicodeText, info={'type': (str, 'string')})
     boolean_value = Column(Boolean, info={'type': (bool, 'boolean')})
 
+
 class System(ProxiedDictMixin, Base):
     '''
     System ORM object
 
     Attributes:
-      name : str
-        Name of the system
-      topology : str
-        Three letter code of the zeolite framework topology
-      formula : str
-        Chemical formula of the system (unit cell)
-      magnetic_moment: float
-	The total magnetic moment
+        name : str
+            Name of the system
+        topology : str
+            Three letter code of the zeolite framework topology
+        formula : str
+            Chemical formula of the system (unit cell)
+        magnetic_moment: float
+            The total magnetic moment
     '''
 
     __tablename__ = 'systems'
@@ -493,7 +504,7 @@ class System(ProxiedDictMixin, Base):
     def forces(self):
         '''Return a numpy array with the forces'''
 
-        values = [[a.force_x,a.force_y,a.force_z] for a in self.atoms]
+        values = [[a.force_x, a.force_y, a.force_z] for a in self.atoms]
         if len(values) > 0:
             return np.asarray(values)
         else:

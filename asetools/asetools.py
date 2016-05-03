@@ -24,6 +24,7 @@ Ry_to_eV = value('Rydberg constant times hc in eV')
 m1_to_eV = value('inverse meter-electron volt relationship')
 eV_to_m1 = value('electron volt-inverse meter relationship')
 
+
 class AseTemplate(Template):
     'A subclass of the string.Template with altered delimiter and extra methods'
 
@@ -37,7 +38,7 @@ class AseTemplate(Template):
         keys = {}
         match = self.pattern.findall(self.template)
         for k, v in self.pattern.groupindex.items():
-            keys[k] = [x[v-1] for x in match if x[v-1] != '']
+            keys[k] = [x[v - 1] for x in match if x[v - 1] != '']
         return keys
 
     def render_and_write(self, subs, output='input.py'):
@@ -58,6 +59,7 @@ class AseTemplate(Template):
         with open(output, 'w') as fout:
             fout.write(rendered)
 
+
 def eV_to_kJmol(energy):
     '''
     Convert the energy from eV to kJ/mol
@@ -67,13 +69,15 @@ def eV_to_kJmol(energy):
         Energy in eV
     '''
 
-    return energy*eV2J*N_A/1000.0
+    return energy * eV2J * N_A / 1000.0
+
 
 def merge_two_dicts(x, y):
     '''Given two dicts, merge them into a new dict as a shallow copy.'''
     z = x.copy()
     z.update(y)
     return z
+
 
 def get_config(fname=None):
     '''
@@ -89,6 +93,7 @@ def get_config(fname=None):
     siteinfo = {}
     execfile(fpath, siteinfo)
     return siteinfo['config']
+
 
 def which(prog):
     '''
@@ -111,11 +116,13 @@ def which(prog):
         if os.path.exists(fprog) and os.access(fprog, os.X_OK):
             return fprog
 
+
 def list_templates():
     '''Return a list of all the available template file names'''
 
     path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "templates")
     return os.listdir(path)
+
 
 def get_template(tname=None):
     '''
@@ -150,15 +157,17 @@ def get_template(tname=None):
     else:
         raise IOError("File: '{f:s}' not found in {p:s}".format(f=tname, p=path))
 
+
 def interp_positions(image1, image2, no=1):
     images = []
     ipos = image1.get_positions()
-    dpos = (image2.get_positions() - ipos)/(no+1.0)
+    dpos = (image2.get_positions() - ipos) / (no + 1.0)
     for i in range(no):
         image = image1.copy()
-        image.set_positions(ipos+dpos*(i+1))
+        image.set_positions(ipos + dpos * (i + 1))
         images.append(image)
     return images
+
 
 def get_maxforce(atoms):
     try:
@@ -166,9 +175,11 @@ def get_maxforce(atoms):
     except:
         raise
 
+
 def get_maxlength(vec):
     '''Return the length of the longest vector in an array of vectors'''
-    return np.sqrt(np.sum(vec**2.0,axis=1)).max()
+    return np.sqrt(np.sum(vec**2.0, axis=1)).max()
+
 
 def swap(a, i, j):
     '''Swap items i and j in the list a'''
@@ -176,6 +187,7 @@ def swap(a, i, j):
     a[i], a[j] = a[j], a[i]
 
     return a
+
 
 def swap_atompositions(atoms, i, j):
     '''Swap the positions of atom no i and j in an atoms object'''
@@ -186,16 +198,18 @@ def swap_atompositions(atoms, i, j):
     atoms.set_positions(newpos)
     return atoms
 
+
 def swap_atoms(atoms, i, j):
     '''Swap the atoms no i and j in an atoms object'''
     acopy = atoms.copy()
-    swap_atompositions(atoms,i,j)
-    
+    swap_atompositions(atoms, i, j)
+
     atoms[i].index = j
     atoms[j].index = i
     atoms[i].symbol = acopy[j].symbol
     atoms[j].symbol = acopy[i].symbol
     return atoms
+
 
 def move_atom(atoms, i, j):
     '''function that moves atom i to position j'''
@@ -204,14 +218,15 @@ def move_atom(atoms, i, j):
     newsymbols = a.get_chemical_symbols()
     pos = a.get_positions()
     if j < i:
-       newsymbols = np.delete(np.insert(newsymbols,j,a[i].symbol),i+1)
-       newpos = np.concatenate((pos[:j],[pos[i]],pos[j:i],pos[i+1:]))
+       newsymbols = np.delete(np.insert(newsymbols, j, a[i].symbol), i + 1)
+       newpos = np.concatenate((pos[:j], [pos[i]], pos[j:i], pos[i + 1:]))
     else:
-       newsymbols = np.insert(np.delete(newsymbols,i),j,a[i].symbol)
-       newpos = np.concatenate((pos[:i],pos[i+1:j+1],[pos[i]],pos[j+1:]))
+       newsymbols = np.insert(np.delete(newsymbols, i), j, a[i].symbol)
+       newpos = np.concatenate((pos[:i], pos[i + 1:j + 1], [pos[i]], pos[j + 1:]))
     a.set_chemical_symbols(newsymbols)
     a.set_positions(newpos)
     return a
+
 
 def get_indices_by_symbols(atoms, symbollist, mode='include'):
     '''
@@ -249,6 +264,7 @@ def remove_atom_by_symbols(atoms, symbollist):
 
     del atoms[[atom.index for atom in atoms if atom.symbol in symbollist]]
 
+
 def substitute_atom(atoms, a1, a2):
     '''
     Funtion that given an Atoms object and two symbols a1 and a2, substitutes
@@ -258,6 +274,7 @@ def substitute_atom(atoms, a1, a2):
     for i in indices:
         atoms[i].symbol = a2
     return
+
 
 def attach_atom(atoms, ind, symbol='H', theta=-45.0, r=1.5):
     '''
@@ -286,6 +303,7 @@ def attach_atom(atoms, ind, symbol='H', theta=-45.0, r=1.5):
     h = Atom(symbol=symbol, position=[x, y, z])
 
     return atoms + h
+
 
 def attach_molecule(atoms, ind, molecule, theta=-45.0, r=2.5):
     '''
@@ -322,10 +340,13 @@ def attach_molecule(atoms, ind, molecule, theta=-45.0, r=2.5):
     molecule.translate([cmx, cmy, cmz])
     return atoms + molecule
 
+
 def get_SiAlratio(atoms):
-  '''returns the Si/Al ratio for an ase.Atoms object'''
-  c = Counter(atoms.get_chemical_symbols())
-  return round(c['Si']/float(c['Al']),1)
+    'returns the Si/Al ratio for an ase.Atoms object'
+
+    c = Counter(atoms.get_chemical_symbols())
+    return round(c['Si'] / float(c['Al']), 1)
+
 
 def smart_cell(s, vac=5.0, h=0.2):
     '''
@@ -336,36 +357,38 @@ def smart_cell(s, vac=5.0, h=0.2):
     '''
     s.center(vac)
     pos = s.get_positions()
-    x = np.max(pos[:,0]) - np.min(pos[:,0])
-    y = np.max(pos[:,1]) - np.min(pos[:,1])
-    z = np.max(pos[:,2]) - np.min(pos[:,2])
-    a = np.array([x,y,z])
-    b = a + np.array([2.*vac,2.*vac,2.*vac])
+    x = np.max(pos[:, 0]) - np.min(pos[:, 0])
+    y = np.max(pos[:, 1]) - np.min(pos[:, 1])
+    z = np.max(pos[:, 2]) - np.min(pos[:, 2])
+    a = np.array([x, y, z])
+    b = a + np.array([2.0 * vac, 2.0 * vac, 2.0 * vac])
     c = np.zeros(3)
     for i in range(len(c)):
         v = b[i]
         gpts = v / h
         rem = np.mod(gpts, 4)
-        c[i] = v+(4-rem)*h
+        c[i] = v + (4 - rem) * h
     if len(s) == 1:
-        c[1] += 4*h
-        c[2] += 8*h
+        c[1] += 4 * h
+        c[2] += 8 * h
     s.set_cell(c)
     s.center()
+
 
 def set_init_magmoms(atoms, magset):
     '''sets initial magmoms for elements specified in magset. E.g. ('Ni',1.0)
     will set the initial magnetic moment of all Ni atoms to 1.0'''
 
     indxs = []
-    for name,magmom in magset:
-        idxs = get_indices_by_symbols(atoms,name)
-        magvals = [magmom]*len(idxs)
-        indxs += zip(idxs,magvals)
+    for name, magmom in magset:
+        idxs = get_indices_by_symbols(atoms, name)
+        magvals = [magmom] * len(idxs)
+        indxs += zip(idxs, magvals)
     if indxs == [] and magset != []:
         raise ValueError('Error: no elements of specified type present. Exiting...')
     else:
-        set_init_magmoms_from_indxs(atoms,indxs)
+        set_init_magmoms_from_indxs(atoms, indxs)
+
 
 def set_init_magmoms_from_indxs(atoms, indxs):
     '''sets initial magmoms for atoms specified in indxs. E.g (1, 1.0) will set
@@ -377,6 +400,7 @@ def set_init_magmoms_from_indxs(atoms, indxs):
         new_magmoms[atom] = magmom
     atoms.set_initial_magnetic_moments(new_magmoms)
 
+
 def get_magnetization(logfile):
     #Adapted from ase-espresso interface written by Johannes Voss
     #https://github.com/vossjo/ase-espresso/wiki
@@ -385,16 +409,16 @@ def get_magnetization(logfile):
     Units are Bohr magnetons per unit cell, directly read from PWscf log.
     Returns (0,0) if no magnetization is found in log.
     '''
-    p1 = os.popen('grep "total magnetization" '+logfile+' | tail -1','r')
+    p1 = os.popen('grep "total magnetization" ' + logfile + ' | tail -1', 'r')
     s1 = p1.readlines()
     p1.close()
-    p2 = os.popen('grep "absolute magnetization" '+logfile+' | tail -1','r')
+    p2 = os.popen('grep "absolute magnetization" ' + logfile + ' | tail -1', 'r')
     s2 = p2.readlines()
     p2.close()
 
     if len(s1) == 0:
         assert len(s2) == 0
-        return (0,0)
+        return (0, 0)
     else:
         assert len(s1) == 1
         assert len(s2) == 1
@@ -403,6 +427,7 @@ def get_magnetization(logfile):
         s2_ = s2[0].split("=")[-1]
         absmag = float(s2_.split("Bohr")[0])
         return(totmag, absmag)
+
 
 def create_single_job(workdir, atoms, template, subs, jobname='input.py',
         submitargs=None):
@@ -439,6 +464,7 @@ def create_single_job(workdir, atoms, template, subs, jobname='input.py',
     #    submitargs.insert(0, jobname)
     #    submit(submitargs)
     os.chdir(curdir)
+
 
 def find_closest(atoms, reference, symbol=None, n=1):
     '''
