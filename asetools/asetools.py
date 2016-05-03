@@ -47,6 +47,9 @@ class AseTemplate(Template):
             Name of the file to be written
         '''
 
+        # add additional quotes for string arguments
+        subs = {k : ("'{0:s}'".format(v) if isinstance(v, str) else v) for k, v in subs.items()}
+
         rendered = self.substitute(subs)
         with open(output, 'w') as fout:
             fout.write(rendered)
