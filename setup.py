@@ -8,9 +8,10 @@ setup(
     packages = ['asetools', 'asetools/db'],
     include_package_data = True,
     entry_points = {
-        'console_scripts' : [
+        'console_scripts': [
             'submitQE = asetools.submit:main',
             'dbadd = asetools.db.dbinterface:add_system',
+            'trajextract = asetools.asetools:trajextract',
         ]
     },
     scripts = [

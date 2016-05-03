@@ -7,6 +7,7 @@ from builtins import (bytes, dict, int, list, object, range, str,
                       ascii, chr, hex, input, next, oct, open,
                       pow, round, super, filter, map, zip)
 
+import argparse
 import os
 import sys
 import numpy as np
@@ -26,7 +27,10 @@ eV_to_m1 = value('electron volt-inverse meter relationship')
 
 
 class AseTemplate(Template):
-    'A subclass of the string.Template with altered delimiter and extra methods'
+    '''
+    A subclass of the string.Template with altered delimiter and extra
+    methods
+    '''
 
     delimiter = '%'
     idpattern = r'[a-z][_a-z0-9]*'
@@ -58,6 +62,29 @@ class AseTemplate(Template):
         rendered = self.substitute(subs)
         with open(output, 'w') as fout:
             fout.write(rendered)
+
+
+def trajextract():
+    '''
+    A CLI interafce to extract atoms object from trajectory file and save it
+    to another file
+    '''
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('traj',
+                        help='trajctory file from which atoms will be extracted')
+    parser.add_argument('ind',
+                        help='index of the image to extracted, defaults to last',
+                        type=int,
+                        default=-1)
+    parser.add_argument('output',
+                        help='output file to save the extracted image')
+
+    args = parser.parse_args()
+
+    atoms = ase.io.read(args.traj, index=args.ind)
+    ase.io.write(args.output, atoms)
+    print('wrote file: {}'.format(args.output))
 
 
 def eV_to_kJmol(energy):
