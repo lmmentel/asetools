@@ -1,7 +1,11 @@
 
 '''asetools package'''
 
-from __future__ import print_function
+from __future__ import print_function, division, unicode_literals, absolute_import
+
+from builtins import (bytes, dict, int, list, object, range, str,
+                      ascii, chr, hex, input, next, oct, open,
+                      pow, round, super, filter, map, zip)
 
 import os
 import sys
