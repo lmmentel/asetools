@@ -10,10 +10,11 @@ from builtins import (bytes, dict, int, list, object, range, str,
 
 from operator import attrgetter
 import datetime
-import numpy as np
 import os
 import shutil
+import json
 
+import numpy as np
 from sqlalchemy import (Column, LargeBinary, Integer, String, Float,
         PickleType, ForeignKey, DateTime, Unicode, UnicodeText, Boolean)
 from sqlalchemy.orm import relationship
@@ -177,8 +178,8 @@ class DBCalculator(ProxiedDictMixin, Base):
         '''
         Return a dict with calculator init arguments (stored as attributes).
 
-        String values are surrounded by quotes since the attributes will be rendered to a template
-        for example, ``mode='scf'`` will be stored as mode='"scf"'``
+        Attributes that are not basic types: ``int``, ``str``, ``float``, ``bool`` are stored as
+        strings and will be recovered to proper types with ``json.loads``
         '''
 
         # a list of arguments that are not: str, int, float or bool
@@ -186,8 +187,13 @@ class DBCalculator(ProxiedDictMixin, Base):
 
         out = {}
         for k, v in self.attributes.items():
-            if isinstance(v.value, str) and not k in nonbasic:
-                out[k] = "'{}'".format(v.value)
+            if k == 'kpts':
+                if v = 'gamma':
+                    out[k] = v.value
+                else:
+                    out[k] == json.loads(v.value)
+            if k in nonbasic:
+                out[k] = json.loads(v.value)
             else:
                 out[k] = v.value
         return out
