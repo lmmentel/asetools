@@ -2,18 +2,20 @@
 
 '''A module with methods for managing jobs through a database'''
 
-from __future__ import print_function, division, unicode_literals
+from __future__ import print_function, division, unicode_literals, absolute_import
 
+from builtins import (bytes, dict, int, list, object, range, str,
+                      ascii, chr, hex, input, next, oct, open,
+                      pow, round, super, filter, map, zip)
 import os
 import pickle
-from string import maketrans
 
 import ase.io
 from ase.lattice.spacegroup.cell import cell_to_cellpar
 from ase.thermochemistry import HarmonicThermo, IdealGasThermo
 
-from asetools import AseTemplate
-from asetools.submit import main as sub
+from ..asetools import AseTemplate
+from ..submit import main as sub
 from .model import Job, System, VibrationSet
 from .dbinterface import vibrations2db, atoms2db, get_atoms
 
@@ -25,7 +27,7 @@ def sanitizestr(value, repd=None, keepchars=None):
     if keepchars is None:
         keepchars = ('_', '.', '+', '-')
 
-    rtable = maketrans(''.join(repd.keys()), ''.join(repd.values()))
+    rtable = str.maketrans(''.join(repd.keys()), ''.join(repd.values()))
     value = str(value).translate(rtable)
 
     value = "".join(c for c in value if c.isalnum() or c in keepchars).rstrip()
