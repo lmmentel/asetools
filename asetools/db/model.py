@@ -192,7 +192,7 @@ class DBCalculator(ProxiedDictMixin, Base):
         out = {}
         for k, v in self.attributes.items():
             if k == 'kpts':
-                if v == 'gamma':
+                if v.value == 'gamma':
                     out[k] = v.value
                 else:
                     out[k] == json.loads(v.value)
@@ -297,6 +297,7 @@ class DBAtom(Base):
 
         return "<DBAtom(atomic_number={0:d}, mass={1:10.4f}, x={2:10.4f}, y={3:10.4f}, z={4:10.4f})>".format(
             self.atomic_number, self.mass, self.x, self.y, self.z)
+
 
 class Job(Base):
 
