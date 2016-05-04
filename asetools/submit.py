@@ -200,30 +200,30 @@ def write_job_script(args, directives_writer):
         sys.exit('Dont know the job specifications for program: {0}. Exiting...'.format(args['program']))
     else:
         jobspec = args['jobspec'][args['program']]
-    with open(args['script_name'], 'w') as script:
-        script.write("#!/bin/bash\n")
-        script.write(directives_writer(args) + '\n')
-        if 'lib_paths' in args and args['lib_paths'] != "":
-            script.write('export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:{0:<s}\n\n'.format(":".join(args['lib_paths'])))
+    	with open(args['script_name'], 'w') as script:
+            script.write("#!/bin/bash\n")
+            script.write(directives_writer(args) + '\n')
+            if 'lib_paths' in args and args['lib_paths'] != "":
+                script.write('export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:{0:<s}\n\n'.format(":".join(args['lib_paths'])))
             if 'modules' in jobspec:
                 script.write(jobspec['modules'] + '\n')
             if args['vars']:
-                for name, value in args['vars']:
+            	for name, value in args['vars']:
                     script.write("export {n}={v}\n".format(n=name, v=value))
             if 'precmd' in jobspec:
-                script.write('\n' + jobspec['precmd'].format(**args) + '\n')
+            	script.write('\n' + jobspec['precmd'].format(**args) + '\n')
             if args['scratch']:
-                wrkdir = os.path.join(args['scratch'], args['jobname'])
-                script.write("mkdir -p {}\n".format(wrkdir))
-                files = args['input']
-                if args['extrafiles']:
-                    files += ' ' + ' '.join(args['extrafiles'])
-                script.write('cp -t {0} {1}\n'.format(wrkdir, files))
-                script.write('cd {0}\n'.format(wrkdir))
-            script.write("\n# Do the work\n")
+            	wrkdir = os.path.join(args['scratch'], args['jobname'])
+            	script.write("mkdir -p {}\n".format(wrkdir))
+            	files = args['input']
+            	if args['extrafiles']:
+                   files += ' ' + ' '.join(args['extrafiles'])
+            	script.write('cp -t {0} {1}\n'.format(wrkdir, files))
+       	    	script.write('cd {0}\n'.format(wrkdir))
+	    script.write("\n# Do the work\n")
             script.write(jobspec['cmd'].format(**args) + '\n')
             if 'postcmd' in jobspec:
-                script.write(jobspec['postcmd'])
+            	script.write(jobspec['postcmd'])
 
 
 def create_pbs_directives(args):
