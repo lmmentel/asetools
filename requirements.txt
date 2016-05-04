@@ -1,2 +1,5 @@
-sqlalchemy
+ase
+future
 numpy
+scipy
+sqlalchemy
