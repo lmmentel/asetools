@@ -464,7 +464,7 @@ class JobManager(object):
             # update the values with the ones supplied by the user
             subs2render.update(subs)
             # use the relaxed geometry for calculating the frequency
-            subs['atoms'] = relaxjob.outpath
+            subs2render['atoms'] = relaxjob.outpath
 
             # check if all the template keys have values before rendering the tempate
             if len(set(atemp.get_keys()['named']) - set(subs2render.keys())) == 0:
