@@ -467,7 +467,7 @@ class JobManager(object):
             subs['atoms'] = relaxjob.outpath
 
             # check if all the template keys have values before rendering the tempate
-            if len(atemp.get_keys()['named']) == len(subs2render.keys()):
+            if len(set(atemp.get_keys()['named']) - set(subs2render.keys())) == 0:
                 vibjob.create_job(subs2render, overwrite)
             else:
                 print('Not writing input for {0}, missing values for: {1}'.format(
