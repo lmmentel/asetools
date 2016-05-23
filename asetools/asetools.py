@@ -8,15 +8,17 @@ from builtins import (bytes, dict, int, list, object, range, str,
                       pow, round, super, filter, map, zip)
 
 import argparse
+import datetime
 import os
 import sys
-import numpy as np
 import math
-from ase import Atom
-import ase.io
-from scipy.constants import value
 from collections import Counter
 from string import Template
+import numpy as np
+from scipy.constants import value
+from ase import Atom
+import ase.io
+from ase.lattice.spacegroup.cell import cell_to_cellpar
 
 N_A = value('Avogadro constant')
 eV2J = value('electron volt-joule relationship')
@@ -546,3 +548,44 @@ def nearest_neighbors_kd_tree(x, y, k):
                 used_y.add(k)
                 break
     return nearest_neighbor
+
+
+def write_biosym_car(atoms, title=None, filename='qmpot.car'):
+    '''
+    Write a *car* file in the biosym archive 3 format
+
+    .. see::
+
+       http://www.upch.edu.pe/facien/fc/dbmbqf/zimic/cursos/modelamiento%202005/Manuales/Insight%20documentation/doc/formats980/File_Formats_1998.html#781840
+
+    '''
+
+    pars = cell_to_cellpar(atoms.get_cell())
+    energy = atoms.get_potential_energy()
+
+    if any([b for b in atoms.get_pbc()]):
+        pbc = 'ON'
+    else:
+        pbc = 'OFF'
+
+    if 'spacegroup' in atoms.info.keys():
+        sgname = atoms.info['spacegroup'].symbol
+    else:
+        sgname = '(P1)'
+
+    d = datetime.datetime.now()
+
+    with open(filename, 'w') as fcar:
+
+        fcar.write('!BIOSYM archive 3\n')
+        fcar.write('PBC={0:s}\n'.format(pbc))
+        fcar.write(title.ljust(65) + '{0:>15.7f}\n'.format(energy))
+        fcar.write('!DATE ' + d.strftime('%a %b %d %H:%M:%S %Y') + '\n')
+        fcar.write('PBC' + ''.join(['{0:10.5f}'.format(p) for p in pars]) + ' ' + sgname.ljust(7) + '\n')
+
+        for atom in atoms:
+            line = atom.symbol.ljust(5) + ' ' + ' '.join(['{0:14.9f}'.format(c) for c in atom.position])
+            line += ' XXXX' + ' ' + '1'.ljust(7) + atom.symbol.ljust(7) + ' ' + atom.symbol.ljust(2)
+            line += ' ' + '{0:6.3f}\n'.format(atom.number)
+            fcar.write(line)
+        fcar.write('end\nend')
