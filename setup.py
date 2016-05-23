@@ -12,6 +12,7 @@ setup(
             'submitQE = asetools.submit:main',
             'dbadd = asetools.db.dbinterface:add_system',
             'trajextract = asetools.asetools:trajextract',
+            'traj2car = asetools.asetools:traj_to_car',
         ]
     },
     scripts = [

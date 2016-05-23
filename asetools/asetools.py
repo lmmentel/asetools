@@ -589,3 +589,18 @@ def write_biosym_car(atoms, title=None, filename='qmpot.car'):
             line += ' ' + '{0:6.3f}\n'.format(atom.number)
             fcar.write(line)
         fcar.write('end\nend')
+
+def traj_to_car():
+    '''
+    CLI for converting trajectory files to car (BIOSYM archive 3)
+    '''
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('traj', help='trajectory file')
+    parser.add_argument('-o', '--output', default='qmpot.car', help='output file name')
+    args = parser.parse_args()
+
+    atoms = ase.io.read(args.traj)
+
+    write_biosym_car(atoms, title='converted from: ' + args.traj, filename=args.output)
+    print('wrote file: ', args.output)
