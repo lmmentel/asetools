@@ -456,43 +456,6 @@ def get_magnetization(logfile):
         return(totmag, absmag)
 
 
-def create_single_job(workdir, atoms, template, subs, jobname='input.py',
-        submitargs=None):
-    '''
-    Create a directory for a job and write the initial structure and job script
-    to it.
-
-    Args:
-      workdir : str
-        Name of the directory for the job
-      atoms : ase.Atoms
-        Atoms object with the initial geometry
-      template : str
-        ASE template string with the job description
-      subs : dict
-        Dictionary of items to be substituted into the template
-      jobname : str
-        Name of the ase job script
-      submitargs : list
-        List of string attributes to pass to the submitter (submitQE) in order
-        to send the job to the queue
-
-    '''
-
-    curdir = os.getcwd()
-    if not os.path.isdir(workdir):
-        os.makedirs(workdir)
-    os.chdir(workdir)
-    if atoms:
-        ase.io.write(subs['atoms'], atoms)
-    t = AseTemplate(template)
-    t.render_and_write(subs, output=jobname)
-    #if submitargs:
-    #    submitargs.insert(0, jobname)
-    #    submit(submitargs)
-    os.chdir(curdir)
-
-
 def find_closest(atoms, reference, symbol=None, n=1):
     '''
     Return a list of indices of atoms closest to the reference atom
@@ -527,3 +490,59 @@ def find_closest(atoms, reference, symbol=None, n=1):
         out = out[out['symbol'] == symbol]
 
     return out[:n]
+
+
+def get_indices_of_duplicates(lst):
+    '''
+    Get indices and values of repeated elements in a list
+
+    Returns:
+        an array of repeated value and a list of array with indices of repeated elements
+    '''
+    records_array = np.array(lst)
+    idx_sort = np.argsort(records_array)
+    sorted_records_array = records_array[idx_sort]
+    vals, idx_start, count = np.unique(sorted_records_array, return_counts=True,
+                                    return_index=True)
+
+    # sets of indices
+    res = np.split(idx_sort, idx_start[1:])
+    #filter them with respect to their size, keeping only items occurring more than once
+
+    vals = vals[count > 1]
+    res = filter(lambda x: x.size > 1, res)
+    return vals, res
+
+
+def nearest_neighbors_kd_tree(x, y, k):
+    '''
+    Find unique pairs using KDTree method
+
+    Args:
+        x : numpy.array
+            points in 3D
+        y : numpy.array
+            points in 3D
+        k : int
+            number of nearest neighbors to use
+
+    .. see::
+       http://stackoverflow.com/questions/15363419/finding-nearest-items-across-two-lists-arrays-in-python
+
+    '''
+
+    from scipy.spatial import cKDTree
+
+    x, y = map(np.asarray, (x, y))
+    tree = cKDTree(y)
+    ordered_neighbors = tree.query(x, k)[1]
+    nearest_neighbor = np.empty((len(x),), dtype=np.intp)
+    nearest_neighbor.fill(-1)
+    used_y = set()
+    for j, neigh_j in enumerate(ordered_neighbors):
+        for k in neigh_j:
+            if k not in used_y:
+                nearest_neighbor[j] = k
+                used_y.add(k)
+                break
+    return nearest_neighbor
