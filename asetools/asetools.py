@@ -550,7 +550,7 @@ def nearest_neighbors_kd_tree(x, y, k):
     return nearest_neighbor
 
 
-def write_biosym_car(atoms, title=None, filename='qmpot.car'):
+def write_biosym_car(atoms, title='', filename='output.car'):
     '''
     Write a *car* file in the biosym archive 3 format
 
@@ -573,20 +573,21 @@ def write_biosym_car(atoms, title=None, filename='qmpot.car'):
     else:
         sgname = '(P1)'
 
-    d = datetime.datetime.now()
+    date = datetime.datetime.now()
 
     with open(filename, 'w') as fcar:
 
         fcar.write('!BIOSYM archive 3\n')
         fcar.write('PBC={0:s}\n'.format(pbc))
         fcar.write(title.ljust(65) + '{0:>15.7f}\n'.format(energy))
-        fcar.write('!DATE ' + d.strftime('%a %b %d %H:%M:%S %Y') + '\n')
+        fcar.write('!DATE ' + date.strftime('%a %b %d %H:%M:%S %Y') + '\n')
         fcar.write('PBC' + ''.join(['{0:10.5f}'.format(p) for p in pars]) + ' ' + sgname.ljust(7) + '\n')
 
         for atom in atoms:
-            line = atom.symbol.ljust(5) + ' ' + ' '.join(['{0:14.9f}'.format(c) for c in atom.position])
-            line += ' XXXX' + ' ' + '1'.ljust(7) + atom.symbol.ljust(7) + ' ' + atom.symbol.ljust(2)
-            line += ' ' + '{0:6.3f}\n'.format(atom.number)
+            line = ' '.join([atom.symbol.ljust(5),
+                             ' '.join(['{0:14.9f}'.format(c) for c in atom.position]),
+                             'XXXX', '1'.ljust(7) + atom.symbol.ljust(7),
+                             atom.symbol.ljust(2), '{0:6.3f}\n'.format(atom.number)])
             fcar.write(line)
         fcar.write('end\nend')
 
@@ -597,7 +598,7 @@ def traj_to_car():
 
     parser = argparse.ArgumentParser()
     parser.add_argument('traj', help='trajectory file')
-    parser.add_argument('-o', '--output', default='qmpot.car', help='output file name')
+    parser.add_argument('-o', '--output', default='output.car', help='output file name')
     args = parser.parse_args()
 
     atoms = ase.io.read(args.traj)
