@@ -105,6 +105,8 @@ class JobManager(object):
             outname = 'vibenergies.pckl'
         elif jobname == 'thermo':
             outname = 'thermo.pckl'
+	elif jobname == 'single':
+	    outname = 'singlepoint.traj'
         else:
             outname = sanitized + '.pkl'
 

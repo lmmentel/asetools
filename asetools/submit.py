@@ -171,8 +171,7 @@ def write_and_submit_script(args,submitter):
         print("NOT submitting {} to the queue\nbye...".format(args['script_name']))
     else:
         output = subprocess.check_output([submitter['executable'], args['script_name']])
-
-        patt = re.compile(r"(\d+)\.")
+        patt = re.compile(r"[a-zA-Z\.]*(\d+)[a-zA-Z\.]*")
         match = patt.search(output)
         if match:
             pid = str(match.group(1))
