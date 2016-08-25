@@ -192,7 +192,8 @@ def get_template(session, ids):
 def atoms2db(atoms):
     '''
     Convert `ase.Atoms <https://wiki.fysik.dtu.dk/ase/ase/atoms.html#module-ase.atoms>`_
-    object into a list of :py:class:`DBAtom <asetools.db.model.DBAtom>` objects and return
+    object into a list of :py:class:`DBAtom <asetools.db.model.DBAtom>`
+    objects and return
 
     Args:
       atoms : `ase.Atoms <https://wiki.fysik.dtu.dk/ase/ase/atoms.html#module-ase.atoms>`_
@@ -210,9 +211,9 @@ def atoms2db(atoms):
         try:
             forces = atoms.get_forces()
         except:
-            forces = [[None]*3 for _ in range(len(atoms))]
+            forces = [[None] * 3 for _ in range(len(atoms))]
     else:
-        forces = [[None]*3 for _ in range(len(atoms))]
+        forces = [[None] * 3 for _ in range(len(atoms))]
 
     for atom, imagm, icharge, force in zip(atoms, inimagm, inichar, forces):
 
