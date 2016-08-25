@@ -19,11 +19,12 @@ from ..submit import main as sub
 from .model import Job, System, VibrationSet
 from .dbinterface import vibrations2db, atoms2db, get_atoms
 
+
 def sanitizestr(value, repd=None, keepchars=None):
     'Sanitize the string to get a workable filename'
 
     if repd is None:
-        repd = {'(' : '_', ')' : '_', '[' : '_', ']' : '_', ',' : '_'}
+        repd = {'(': '_', ')': '_', '[': '_', ']': '_', ',': '_'}
     if keepchars is None:
         keepchars = ('_', '.', '+', '-')
 
@@ -32,6 +33,7 @@ def sanitizestr(value, repd=None, keepchars=None):
 
     value = "".join(c for c in value if c.isalnum() or c in keepchars).rstrip()
     return value
+
 
 class JobManager(object):
     ''' database oriented job manager '''
@@ -105,8 +107,8 @@ class JobManager(object):
             outname = 'vibenergies.pckl'
         elif jobname == 'thermo':
             outname = 'thermo.pckl'
-	elif jobname == 'single':
-	    outname = 'singlepoint.traj'
+        elif jobname == 'single':
+            outname = 'singlepoint.traj'
         else:
             outname = sanitized + '.pkl'
 
@@ -120,8 +122,7 @@ class JobManager(object):
                 status='not started',
                 template_id=temp_id,
                 calculator_id=calc_id,
-                username=os.getenv('USER'),
-                )
+                username=os.getenv('USER'))
 
             syst.jobs.append(djob)
             self.session.add(syst)
@@ -172,14 +173,13 @@ class JobManager(object):
         self.insert_jobs([tst], jobname='neb', workdir=workdir, temp_id=temp_id,
                          calc_id=calc_id, commit=commit)
 
-        repls = {'initial' : 'initial.traj',
-                 'final'   : 'final.traj',
-                 'nimage'  : nimage,
-                 'springc' : springc,
-                 'climb'   : climb,
-                 'magmoms' : magmoms,
-                 'fmax'    : fmax,
-                }
+        repls = {'initial': 'initial.traj',
+                 'final'  : 'final.traj',
+                 'nimage' : nimage,
+                 'springc': springc,
+                 'climb'  : climb,
+                 'magmoms': magmoms,
+                 'fmax'   : fmax}
 
         self.write_jobs([tst], 'neb', subs=[repls], commit=commit)
 
@@ -190,7 +190,8 @@ class JobManager(object):
             ase.io.write(os.path.join(nebjob.abspath, name), atoms)
 
     def insert_vibs(self, systems, relaxname='relax', calc_id=1, temp_id=8,
-                    vibname='freq,thermo', hostname='abel.uio.no', commit=True):
+                    vibname='freq,thermo', hostname='abel.uio.no',
+                    commit=True):
         '''
         Create :py:class:`Job <asetools.db.model.Job>` instances for calculating
         the vibrations and/or thermochemistry and insert them into the db.
@@ -202,7 +203,8 @@ class JobManager(object):
                 Name of the job (referencing `Job.name`) in which the geometry
                 was relaxed
             vibname : str
-                Name of the job (referencing `Job.name`) for the frequency calculation
+                Name of the job (referencing `Job.name`) for the frequency
+                calculation
             temp_id : int
                 Template ID
             calc_id : int
@@ -228,8 +230,8 @@ class JobManager(object):
                 status=u'not started',
                 template_id=temp_id,
                 jobscript=None,
-                username=os.getenv('USER')
-                )
+                username=os.getenv('USER'))
+
             system.jobs.append(freqjob)
             self.session.add(system)
 
@@ -278,8 +280,8 @@ class JobManager(object):
                     vibname='PHVA', thermofile=None, T=298.15, p=100000,
                     verbose=False, jobstatus='finished', commit=True):
         '''
-        Update frequencies and thermochemistry in the database for the `systems`
-        from the jobs with the name `jobname`.
+        Update frequencies and thermochemistry in the database for the
+        `systems` from the jobs with the name `jobname`.
 
         Args:
             systems : list
@@ -338,7 +340,8 @@ class JobManager(object):
         else:
             self.session.rollback()
 
-    def update_geoms(self, systems, jobname, jobstatus='finished', commit=True):
+    def update_geoms(self, systems, jobname, jobstatus='finished',
+                     commit=True):
         '''
         Update the database for the `systems` from the jobs `jobname`
 
@@ -381,11 +384,11 @@ class JobManager(object):
         else:
             self.session.rollback()
 
-    def write_jobs(self, systems, jobname, subs=None, submit=False, subargs=None,
-                   overwrite=False, commit=True):
+    def write_jobs(self, systems, jobname, subs=None, submit=False,
+                   submitargs=None, overwrite=False, commit=True):
         '''
-        Render the template file into an input script for the job, write the file and
-        submit the job (if requested).
+        Render the template file into an input script for the job, write the
+        file and submit the job (if requested).
 
         Args:
             systems : list
@@ -398,8 +401,9 @@ class JobManager(object):
                 calculator specified in the job
             submit : bool
                 A flag to specify whether to submit the job or not
-            subargs : list of strings
-                A list of arguments for the batch program used to submit the job
+            submitargs : list of strings
+                A list of arguments for the batch program used to submit the
+                job
             commit : bool
                 Flag to mark whether to commit changes or not
         '''
@@ -408,16 +412,18 @@ class JobManager(object):
             job = next(j for j in system.jobs if j.name == jobname)
             atemp = AseTemplate(job.template.template)
 
-            # create a dictionary with replacements for the template by getting the
-            # matching values from the calculator attributes absed on keys from the
-            # template
+            # create a dictionary with replacements for the template by getting
+            # the matching values from the calculator attributes absed on keys
+            # from the template
             subs2render = {k: job.calculator[k] for k in atemp.get_keys()['named'] \
                            if k in job.calculator.attributes.keys()}
 
             # update the values with the ones supplied by the user
-            subs2render.update(subs)
+            if subs is not None:
+                subs2render.update(subs)
 
-            # check if all the template keys have values before rendering the tempate
+            # check if all the template keys have values before rendering the
+            # tempate
             if len(set(atemp.get_keys()['named']) - set(subs2render.keys())) == 0:
                 job.create_job(subs2render, overwrite)
             else:
@@ -425,7 +431,7 @@ class JobManager(object):
                     system.name, str(set(atemp.get_keys()['named']) - set(subs2render.keys()))))
 
         if submit:
-            self.submit_jobs(systems, jobname, subargs, commit)
+            self.submit_jobs(systems, jobname, submitargs, commit)
 
     def write_vibs(self, systems, subs, relaxname='relax', vibname='freq',
                    submit=False, subargs=None, overwrite=False, commit=True):

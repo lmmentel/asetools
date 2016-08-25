@@ -19,6 +19,7 @@ from ase.lattice.spacegroup.cell import cellpar_to_cell, cell_to_cellpar
 
 from .model import Base, DBAtom, System, DBTemplate, DBCalculator, Vibration, VibrationSet
 
+
 def get_session(dbpath, echo=False):
     '''
     Return the database session connection for the sqlite3 database
@@ -40,6 +41,7 @@ def get_session(dbpath, echo=False):
     db_session = sessionmaker(bind=engine, autoflush=False, autocommit=False)
     return db_session()
 
+
 def get_pgsession(passwd, dbapi='psycopg2'):
     '''
     Get the database engine for the postgresql
@@ -57,6 +59,7 @@ def get_pgsession(passwd, dbapi='psycopg2'):
     db_session = sessionmaker(bind=engine, autoflush=False, autocommit=False)
     return db_session()
 
+
 def get_pgengine(passwd):
     '''
     Get the database engine from the postgresql
@@ -73,11 +76,13 @@ def get_pgengine(passwd):
     engine = create_engine('postgresql+psycopg2://smn_kvantekjemi_test_user:{}@dbpg-hotel-utv.uio.no/smn_kvantekjemi_test'.format(passwd))
     return engine
 
+
 def get_engine(dbpath):
     '''Return the db engine'''
 
     engine = create_engine("sqlite:///{path:s}".format(path=dbpath), echo=False)
     return engine
+
 
 def get_table(tablename, dbpath, **kwargs):
     '''
@@ -106,6 +111,7 @@ def get_table(tablename, dbpath, **kwargs):
     else:
         raise ValueError('Table should be one of: {}'.format(", ".join(tables)))
 
+
 def numpify(atomlist, attribute):
     '''
     Create a numpy array containing an attribute of DBAtoms from a list of
@@ -122,6 +128,7 @@ def numpify(atomlist, attribute):
     '''
 
     return np.asarray([getattr(atom, attribute) for atom in atomlist])
+
 
 def get_atoms(session, system_id):
     '''
@@ -171,6 +178,7 @@ def get_atoms(session, system_id):
 
     return atoms
 
+
 def get_template(session, ids):
     'Return a template string based either on the id or name'
 
@@ -179,6 +187,7 @@ def get_template(session, ids):
     elif isinstance(ids, (str, unicode)):
         q = session.query(DBTemplate).filter(DBTemplate.name == ids).one()
     return q.template
+
 
 def atoms2db(atoms):
     '''
@@ -228,6 +237,7 @@ def atoms2db(atoms):
 
     return dbatoms
 
+
 def atoms2system(atoms, name=None, topology=None, magnetic_moment=None,
                  notes=None, vibrations=None, vibname=None, atom_ids=None,
                  realonly=False):
@@ -274,6 +284,7 @@ def atoms2system(atoms, name=None, topology=None, magnetic_moment=None,
 
     return system
 
+
 def vibrations2db(vibrations, name=None, atom_ids=None, system_id=None, realonly=False):
     '''
     Instantiate the :py:class:` VibrationSet <asetools.db.model.VibrationSet>`
@@ -315,6 +326,7 @@ def vibrations2db(vibrations, name=None, atom_ids=None, system_id=None, realonly
     vibset.vibrations = viblist
 
     return vibset
+
 
 def calculator2db(calc, attrs='basic', description=None):
     '''
@@ -369,6 +381,7 @@ def calculator2db(calc, attrs='basic', description=None):
 
     return dbcalc
 
+
 def hasattribute(obj, name, default=None):
     '''Check if a given instance has a specified method or attribute'''
 
@@ -382,6 +395,7 @@ def hasattribute(obj, name, default=None):
     else:
         out = default
     return out
+
 
 def from_traj(session, traj, name, topology, notes, calcid=None, tempid=None):
     '''
@@ -415,6 +429,7 @@ def from_traj(session, traj, name, topology, notes, calcid=None, tempid=None):
 
     session.add(system)
     session.commit()
+
 
 def add_system():
     '''
