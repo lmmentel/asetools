@@ -2,9 +2,9 @@
 
 '''A module with methods for managing jobs through a database'''
 
-from __future__ import print_function, division, unicode_literals, absolute_import
+from __future__ import print_function, division, absolute_import
 
-from builtins import (bytes, dict, int, list, object, range, str,
+from builtins import (bytes, dict, int, list, object, range,
                       ascii, chr, hex, input, next, oct, open,
                       pow, round, super, filter, map, zip)
 import os
@@ -18,21 +18,7 @@ from ..asetools import AseTemplate
 from ..submit import main as sub
 from .model import Job, System, VibrationSet
 from .dbinterface import vibrations2db, atoms2db, get_atoms
-
-
-def sanitizestr(value, repd=None, keepchars=None):
-    'Sanitize the string to get a workable filename'
-
-    if repd is None:
-        repd = {'(': '_', ')': '_', '[': '_', ']': '_', ',': '_'}
-    if keepchars is None:
-        keepchars = ('_', '.', '+', '-')
-
-    rtable = str.maketrans(''.join(repd.keys()), ''.join(repd.values()))
-    value = str(value).translate(rtable)
-
-    value = "".join(c for c in value if c.isalnum() or c in keepchars).rstrip()
-    return value
+from .utils import sanitizestr
 
 
 class JobManager(object):
@@ -320,12 +306,20 @@ class JobManager(object):
                     mol.thermo = thermoname + '@{:.2f}'.format(T)
 
                     if thermoname in ['HarmonicThermo', 'CrystalThermo']:
+                        viben = thermo.vib_energies
+                        if getattr(thermo, 'electronicenergy', None) is not None:
+                            poten = thermo.electronicenergy
+                        else:
+                            poten = thermo.potentialenergy
+
+                        thermo = HarmonicThermo(viben, poten)
                         mol.entropy = thermo.get_entropy(T, verbose=verbose)
                         mol.internal_energy = thermo.get_internal_energy(T, verbose=verbose)
                         # older version of ase have gibbs free energy instead of
                         # helmholtz
-                        mol.free_energy = thermo.get_gibbs_energy(T, verbose=verbose)
-                        #mol.free_energy = thermo.get_helmholtz_energy(T, verbose=verbose)
+                        #try:
+                        #mol.free_energy = thermo.get_gibbs_energy(T, verbose=verbose)
+                        mol.free_energy = thermo.get_helmholtz_energy(T, verbose=verbose)
                     elif thermoname == 'IdealGasThermo':
                         mol.entropy = thermo.get_entropy(T, p, verbose=verbose)
                         mol.enthalpy = thermo.get_enthalpy(T, verbose=verbose)
