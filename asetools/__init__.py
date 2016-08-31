@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from asetools import *
+from .asetools import *
 
 __version__ = "0.1.5"
