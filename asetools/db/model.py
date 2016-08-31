@@ -516,8 +516,8 @@ class System(ProxiedDictMixin, Base):
 
     def __repr__(self):
 
-        out = ["System(id={0}, name='{1:s}', topology={2:s}, formula={3:s},".format(
-                self.id, self.name, self.topology, self.formula)]
+        head = "System(id={0}, name='{1:s}', topology={2:s}, formula={3:s},"
+        out = [head.format(self.id, self.name, self.topology, self.formula)]
         out.extend(["\t{0:s} = {1}".format(k, v) for k, v in self.notes.items()])
 
         return "\n".join(out) + ')'
