@@ -124,9 +124,11 @@ def submit(args):
         arguments specifying the job
     '''
 
-    submitters = {"pbs" : {'directives_writer':create_pbs_directives, 'executable':'qsub'},
-                  "slurm" : {'directives_writer': create_slurm_directives, 'executable':'sbatch'}
-                 }
+    submitters = {"pbs": {'directives_writer': create_pbs_directives,
+                          'executable': 'qsub'},
+                  "slurm": {'directives_writer': create_slurm_directives,
+                            'executable': 'sbatch'}
+                  }
 
     # get the site configuration from the $HOME/.asetools_site_config.py file
     # and merge it into the args dictionary
@@ -142,9 +144,10 @@ def submit(args):
             "systems are: {1:s}".format(args['batch'], ", ".join(submitters.keys())))
 
 
-def write_and_submit_script(args,submitter):
+def write_and_submit_script(args, submitter):
     '''
-    Writes and submits the job script and saves the job specs in $HOME/submitted_jobs.dat.
+    Writes and submits the job script and saves the job specs in
+    $HOME/submitted_jobs.dat.
 
     Args:
         args: (dict)
@@ -199,7 +202,7 @@ def write_job_script(args, directives_writer):
         sys.exit('Dont know the job specifications for program: {0}. Exiting...'.format(args['program']))
     else:
         jobspec = args['jobspec'][args['program']]
-    	with open(args['script_name'], 'w') as script:
+        with open(args['script_name'], 'w') as script:
             script.write("#!/bin/bash\n")
             script.write(directives_writer(args) + '\n')
             if 'lib_paths' in args and args['lib_paths'] != "":
@@ -207,22 +210,22 @@ def write_job_script(args, directives_writer):
             if 'modules' in jobspec:
                 script.write(jobspec['modules'] + '\n')
             if args['vars']:
-            	for name, value in args['vars']:
+                for name, value in args['vars']:
                     script.write("export {n}={v}\n".format(n=name, v=value))
             if 'precmd' in jobspec:
-            	script.write('\n' + jobspec['precmd'].format(**args) + '\n')
+                script.write('\n' + jobspec['precmd'].format(**args) + '\n')
             if args['scratch']:
-            	wrkdir = os.path.join(args['scratch'], args['jobname'])
-            	script.write("mkdir -p {}\n".format(wrkdir))
-            	files = args['input']
-            	if args['extrafiles']:
-                   files += ' ' + ' '.join(args['extrafiles'])
-            	script.write('cp -t {0} {1}\n'.format(wrkdir, files))
-       	    	script.write('cd {0}\n'.format(wrkdir))
-	    script.write("\n# Do the work\n")
+                wrkdir = os.path.join(args['scratch'], args['jobname'])
+                script.write("mkdir -p {}\n".format(wrkdir))
+                files = args['input']
+                if args['extrafiles']:
+                    files += ' ' + ' '.join(args['extrafiles'])
+                script.write('cp -t {0} {1}\n'.format(wrkdir, files))
+                script.write('cd {0}\n'.format(wrkdir))
+            script.write("\n# Do the work\n")
             script.write(jobspec['cmd'].format(**args) + '\n')
             if 'postcmd' in jobspec:
-            	script.write(jobspec['postcmd'])
+                script.write(jobspec['postcmd'])
 
 
 def create_pbs_directives(args):
@@ -269,7 +272,7 @@ def create_slurm_directives(args):
             the SLURM directives that can be written to a job script.
     '''
 
-    directives = '\n'.join(["#SBATCH --job-name={}".format(args['workdir'][-8:]),
+    directives = '\n'.join(["#SBATCH --job-name={}".format(args['name']),
                             "#SBATCH --account={}".format(args['account']),
                             "#SBATCH --time={}".format(args["walltime"]),
                             "#SBATCH --mem-per-cpu={}".format(args['mem_per_cpu']),

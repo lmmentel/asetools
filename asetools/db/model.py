@@ -8,14 +8,13 @@ from builtins import (bytes, dict, int, list, object, range, str,
                       ascii, chr, hex, input, next, oct, open,
                       pow, round, super, filter, map, zip)
 
-from operator import attrgetter
 import datetime
 import os
 import shutil
 import json
 
 import numpy as np
-from sqlalchemy import (Column, LargeBinary, Integer, String, Float,
+from sqlalchemy import (Column, Integer, String, Float,
         PickleType, ForeignKey, DateTime, Unicode, UnicodeText, Boolean)
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm.collections import attribute_mapped_collection
@@ -29,6 +28,7 @@ from ..asetools import AseTemplate
 
 from sqlalchemy.orm.interfaces import PropComparator
 from sqlalchemy import event, cast, case, null, literal_column
+
 
 class ProxiedDictMixin(object):
     """Adds obj[key] access to a mapped class.
@@ -55,6 +55,7 @@ class ProxiedDictMixin(object):
 
     def __delitem__(self, key):
         del self._proxied[key]
+
 
 class PolymorphicVerticalProperty(object):
     """A key/value pair with polymorphic value storage.
@@ -118,6 +119,7 @@ class PolymorphicVerticalProperty(object):
     def __repr__(self):
         return '<%s %r=%r>' % (self.__class__.__name__, self.key, self.value)
 
+
 @event.listens_for(PolymorphicVerticalProperty, "mapper_configured", propagate=True)
 def on_new_class(mapper, cls_):
     """Look for Column objects with type info in them, and work up
@@ -138,6 +140,7 @@ def on_new_class(mapper, cls_):
 # end of the borrowed code
 
 Base = declarative_base()
+
 
 class DBCalculatorAttribute(PolymorphicVerticalProperty, Base):
     '''class to handle storing key-value pairs for the calculator attributes'''
