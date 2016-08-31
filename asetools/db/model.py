@@ -2,12 +2,6 @@
 
 ''' a database for storing the ase atoms abjects'''
 
-from __future__ import print_function, division, unicode_literals, absolute_import
-
-from builtins import (bytes, dict, int, list, object, range, str,
-                      ascii, chr, hex, input, next, oct, open,
-                      pow, round, super, filter, map, zip)
-
 import datetime
 import os
 import shutil
@@ -15,7 +9,7 @@ import json
 
 import numpy as np
 from sqlalchemy import (Column, Integer, String, Float,
-        PickleType, ForeignKey, DateTime, Unicode, UnicodeText, Boolean)
+                        ForeignKey, DateTime, Unicode, UnicodeText, Boolean)
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.ext.associationproxy import association_proxy
@@ -120,7 +114,8 @@ class PolymorphicVerticalProperty(object):
         return '<%s %r=%r>' % (self.__class__.__name__, self.key, self.value)
 
 
-@event.listens_for(PolymorphicVerticalProperty, "mapper_configured", propagate=True)
+@event.listens_for(PolymorphicVerticalProperty, "mapper_configured",
+                   propagate=True)
 def on_new_class(mapper, cls_):
     """Look for Column objects with type info in them, and work up
     a lookup table."""
@@ -374,7 +369,8 @@ class Vibration(Base):
     id = Column(Integer, primary_key=True)
     energy_real = Column(Float, nullable=False)
     energy_imag = Column(Float, nullable=False)
-    vibrationset_id = Column(Integer, ForeignKey('vibrationsets.id'), nullable=False)
+    vibrationset_id = Column(Integer, ForeignKey('vibrationsets.id'),
+                             nullable=False)
 
     def __repr__(self):
         return "<Vibration(vibrationset_id={0:d}, energy_real={1:15.8f}, energy_imag={2:15.8f})>".format(
@@ -395,7 +391,10 @@ class VibrationSet(Base):
 
     @hybrid_property
     def atom_indices(self):
-        'Return a list of atom indices that were used for calculating vibrations'
+        '''
+        Return a list of atom indices that were used for calculating
+        vibrations
+        '''
 
         if self.atom_ids is not None:
             return np.array(self.atom_ids.split(','), dtype=np.int32)
@@ -452,7 +451,8 @@ class System(ProxiedDictMixin, Base):
     id = Column(Integer, primary_key=True)
 
     ctime = Column(DateTime, default=datetime.datetime.now)
-    mtime = Column(DateTime, default=datetime.datetime.now, onupdate=datetime.datetime.now)
+    mtime = Column(DateTime, default=datetime.datetime.now,
+                   onupdate=datetime.datetime.now)
 
     name = Column(String)
     topology = Column(String)

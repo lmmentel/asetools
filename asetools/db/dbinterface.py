@@ -2,8 +2,6 @@
 
 '''A module providing methods for communication between ASE and the database'''
 
-from __future__ import print_function, division, absolute_import, unicode_literals
-
 import argparse
 import json
 import os
@@ -17,7 +15,8 @@ import ase.io
 from ase import Atoms
 from ase.lattice.spacegroup.cell import cellpar_to_cell, cell_to_cellpar
 
-from .model import Base, DBAtom, System, DBTemplate, DBCalculator, Vibration, VibrationSet
+from .model import (Base, DBAtom, System, DBTemplate, DBCalculator, Vibration,
+                    VibrationSet)
 
 
 def get_session(dbpath, echo=False):
@@ -243,8 +242,8 @@ def atoms2system(atoms, name=None, topology=None, magnetic_moment=None,
                  notes=None, vibrations=None, vibname=None, atom_ids=None,
                  realonly=False):
     '''
-    Instantiate a :py:class:`asetools.db.model.System` from `ase.Atoms` objects and
-    additional parameters
+    Instantiate a :py:class:`asetools.db.model.System` from `ase.Atoms`
+    objects and additional parameters
     '''
 
     dbatoms = atoms2db(atoms)
@@ -266,8 +265,7 @@ def atoms2system(atoms, name=None, topology=None, magnetic_moment=None,
         pbc_b=bool(pbc[1]),
         pbc_c=bool(pbc[2]),
         atoms=dbatoms,
-        magnetic_moment=magnetic_moment,
-        )
+        magnetic_moment=magnetic_moment)
 
     # add the notes to the system instance
     if notes:
@@ -280,13 +278,15 @@ def atoms2system(atoms, name=None, topology=None, magnetic_moment=None,
 
     # add vibrations, if present
     if vibrations is not None:
-        vibset = vibrations2db(vibrations, name=vibname, atom_ids=atom_ids, realonly=realonly)
+        vibset = vibrations2db(vibrations, name=vibname, atom_ids=atom_ids,
+                               realonly=realonly)
         system.vibrationsets = [vibset]
 
     return system
 
 
-def vibrations2db(vibrations, name=None, atom_ids=None, system_id=None, realonly=False):
+def vibrations2db(vibrations, name=None, atom_ids=None, system_id=None,
+                  realonly=False):
     '''
     Instantiate the :py:class:` VibrationSet <asetools.db.model.VibrationSet>`
     from a numpy array containing vibrational energies or a pickle file with
@@ -359,9 +359,9 @@ def calculator2db(calc, attrs='basic', description=None):
 
     dbcalc = DBCalculator(name=name, version=version, description=description)
 
-    cases = {'all'   : sorted(calc.__dict__.keys()),
-             'basic' : ['calcmode', 'convergence', 'dw', 'kpts', 'pw', 'sigma',
-                        'spinpol', 'xc']}
+    cases = {'all'  : sorted(calc.__dict__.keys()),
+             'basic': ['calcmode', 'convergence', 'dw', 'kpts', 'pw', 'sigma',
+                       'spinpol', 'xc']}
 
     if isinstance(attrs, (str, unicode)):
         if attrs in ['all', 'basic']:
@@ -369,7 +369,7 @@ def calculator2db(calc, attrs='basic', description=None):
     elif isinstance(attrs, (list, tuple)):
         attrnames = attrs
     else:
-        raise ValueError('<attr> should be a <str> or <list>, got: {}'.\
+        raise ValueError('<attr> should be a <str> or <list>, got: {}'.
                          format(type(attrs)))
 
     for a in attrnames:
@@ -445,7 +445,8 @@ def add_system():
     parser.add_argument('-t', '--topology', help='framework topology code')
     parser.add_argument('-c', '--calcid', help='calculator id')
     parser.add_argument('-a', '--tempid', help='ase template id')
-    parser.add_argument('--notes', help='additional system info', default=dict())
+    parser.add_argument('--notes', help='additional system info',
+                        default=dict())
 
     args = parser.parse_args()
 

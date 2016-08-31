@@ -2,11 +2,6 @@
 
 '''A module with methods for managing jobs through a database'''
 
-from __future__ import print_function, division, absolute_import
-
-from builtins import (bytes, dict, int, list, object, range,
-                      ascii, chr, hex, input, next, oct, open,
-                      pow, round, super, filter, map, zip)
 import os
 import pickle
 

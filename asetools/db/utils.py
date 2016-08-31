@@ -1,9 +1,6 @@
+# -*- coding: utf-8 -*-
 
-from __future__ import print_function, division, absolute_import
-
-from builtins import (bytes, dict, int, list, object, range, str,
-                      ascii, chr, hex, input, next, oct, open,
-                      pow, round, super, filter, map, zip)
+'useful tools'
 
 
 def sanitizestr(value, repd=None, keepchars=None):
@@ -19,4 +16,3 @@ def sanitizestr(value, repd=None, keepchars=None):
 
     value = "".join(c for c in value if c.isalnum() or c in keepchars).rstrip()
     return value
-
