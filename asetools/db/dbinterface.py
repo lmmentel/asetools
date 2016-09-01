@@ -217,9 +217,9 @@ def atoms2db(atoms):
     for atom, imagm, icharge, force in zip(atoms, inimagm, inichar, forces):
 
         dbatoms.append(DBAtom(
-            atomic_number=atom.number,
+            atomic_number=int(atom.number),
             mass=atom.mass,
-            tag=atom.tag,
+            tag=int(atom.tag),
             x=atom.position[0],
             y=atom.position[1],
             z=atom.position[2],
