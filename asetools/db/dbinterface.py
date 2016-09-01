@@ -183,7 +183,7 @@ def get_template(session, ids):
 
     if isinstance(ids, int):
         q = session.query(DBTemplate).get(ids)
-    elif isinstance(ids, (str, unicode)):
+    elif isinstance(ids, str):
         q = session.query(DBTemplate).filter(DBTemplate.name == ids).one()
     return q.template
 
@@ -316,7 +316,7 @@ def vibrations2db(vibrations, name=None, atom_ids=None, system_id=None,
             viblist = [Vibration(energy_real=r, energy_imag=i) for (r, i) in zip(vibrations.real, vibrations.imag)]
         elif realonly:
             viblist = [Vibration(energy_real=r, energy_imag=i) for (r, i) in zip(vibrations, np.zeros_like(vibrations))]
-    elif isinstance(vibrations, (str, unicode)):
+    elif isinstance(vibrations, str):
         with open(vibrations, 'r') as fvib:
             array = pickle.load(fvib)
         viblist = [Vibration(energy_real=r, energy_imag=i) for (r, i) in zip(array.real, array.imag)]
@@ -363,7 +363,7 @@ def calculator2db(calc, attrs='basic', description=None):
              'basic': ['calcmode', 'convergence', 'dw', 'kpts', 'pw', 'sigma',
                        'spinpol', 'xc']}
 
-    if isinstance(attrs, (str, unicode)):
+    if isinstance(attrs, str):
         if attrs in ['all', 'basic']:
             attrnames = cases[attrs]
     elif isinstance(attrs, (list, tuple)):
