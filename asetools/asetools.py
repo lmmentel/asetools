@@ -18,7 +18,7 @@ import numpy as np
 from scipy.constants import value
 from ase import Atom
 import ase.io
-from ase.lattice.spacegroup.cell import cell_to_cellpar
+from ase.geometry import cell_to_cellpar
 
 N_A = value('Avogadro constant')
 eV2J = value('electron volt-joule relationship')
