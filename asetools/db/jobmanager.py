@@ -257,7 +257,7 @@ class JobManager(object):
         else:
             self.session.rollback()
 
-    def update_vibs(self, systems, jobname, vibfile='vibenergies.pkl',
+    def update_vibs(self, systems, jobname, vibfile='vibenergies.npy',
                     vibname='PHVA', thermofile=None, T=298.15, p=100000,
                     verbose=False, jobstatus='finished', commit=True):
         '''
@@ -294,7 +294,7 @@ class JobManager(object):
 
             if thermofile is not None:
                 if os.path.exists(os.path.join(job.abspath, thermofile)):
-                    with open(os.path.join(job.abspath, thermofile), 'r') as fthermo:
+                    with open(os.path.join(job.abspath, thermofile), 'rb') as fthermo:
                         thermo = pickle.load(fthermo)
 
                     thermoname = thermo.__class__.__name__
@@ -318,7 +318,7 @@ class JobManager(object):
                     elif thermoname == 'IdealGasThermo':
                         mol.entropy = thermo.get_entropy(T, p, verbose=verbose)
                         mol.enthalpy = thermo.get_enthalpy(T, verbose=verbose)
-                        mol.free_energy = thermo.get_gibbs_energy(T, verbose=verbose)
+                        mol.free_energy = thermo.get_gibbs_energy(T, p, verbose=verbose)
                     else:
                         raise ValueError('Unknown thermoname: {}'.format(thermoname))
 

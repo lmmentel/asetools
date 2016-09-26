@@ -5,7 +5,6 @@
 import argparse
 import json
 import os
-import pickle
 import pandas as pd
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -289,13 +288,13 @@ def vibrations2db(vibrations, name=None, atom_ids=None, system_id=None,
                   realonly=False):
     '''
     Instantiate the :py:class:` VibrationSet <asetools.db.model.VibrationSet>`
-    from a numpy array containing vibrational energies or a pickle file with
+    from a numpy array containing vibrational energies or a numpy (.npy) file with
     such an array and return.
 
     Args:
       vibrations: numpy.ndarray or str
         numpy.ndarray of type numpy.complex128 with vibrational energies or
-        the name of the pickle file with such an array
+        the name of the numpy (.npy) file with such an array
       name : str
         Name of the set of vibrations
       atom_ids : str
@@ -317,8 +316,7 @@ def vibrations2db(vibrations, name=None, atom_ids=None, system_id=None,
         elif realonly:
             viblist = [Vibration(energy_real=r, energy_imag=i) for (r, i) in zip(vibrations, np.zeros_like(vibrations))]
     elif isinstance(vibrations, str):
-        with open(vibrations, 'r') as fvib:
-            array = pickle.load(fvib)
+        array = np.load(vibrations)
         viblist = [Vibration(energy_real=r, energy_imag=i) for (r, i) in zip(array.real, array.imag)]
     else:
         raise ValueError('<vibrations> should be either <str> or <numpy.ndarray> type, got: {}'.format(type(vibrations)))
