@@ -5,4 +5,5 @@ dist/**
 docs/source/_reference/**
 *.pyc
 .*.swp
-
+asetools.sublime-project
+asetools.sublime-workspace
