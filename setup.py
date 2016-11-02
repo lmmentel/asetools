@@ -11,12 +11,13 @@ setup(
         'console_scripts': [
             'submitQE = asetools.submit:main',
             'dbadd = asetools.db.dbinterface:add_system',
-            'trajextract = asetools.asetools:trajextract',
-            'traj2car = asetools.asetools:traj_to_car',
+            'trajextract = asetools.cli:trajextract',
+            'traj2car = asetools.cli:traj_to_car',
+            'aseconvert = asetool.cli:aseconvert',
+            'modifycell = asetools.cli:modify_cell',
         ]
     },
     scripts = [
-        'scripts/aseconvert',
         'scripts/checkpointNEB',
         'scripts/checkpointQE',
         'scripts/cubecutperiodic',
@@ -58,7 +59,6 @@ setup(
         'scripts/runNCIplot',
         'scripts/runQE',
         'scripts/run_gencube',
-        'scripts/translate_cell',
         'scripts/writecif',
         'scripts/writeqespec',
     ],
