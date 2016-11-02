@@ -13,7 +13,7 @@ setup(
             'dbadd = asetools.db.dbinterface:add_system',
             'trajextract = asetools.cli:trajextract',
             'traj2car = asetools.cli:traj_to_car',
-            'aseconvert = asetool.cli:aseconvert',
+            'aseconvert = asetools.cli:aseconvert',
             'modifycell = asetools.cli:modify_cell',
         ]
     },
