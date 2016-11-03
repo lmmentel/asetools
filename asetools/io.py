@@ -67,7 +67,8 @@ def read_cif_with_tags(fname):
                                  atoms.info['_atom_site_fract_z']]).T
     sg = atoms.info['spacegroup']
     spos, kinds = sg.equivalent_sites(scaled_positions)
-    labels = np.array([atoms.info['_atom_site_label'][i] for i in kinds], dtype='S5')
+    labels = np.array([atoms.info['_atom_site_label'][i] for i in kinds],
+                      dtype='S5')
     atoms.set_tags(kinds)
     atoms.new_array('labels', labels)
     return atoms
@@ -134,7 +135,8 @@ def write_biosym_car(atoms, title='', filename='output.car'):
         fcar.write('PBC={0:s}\n'.format(pbc))
         fcar.write(title.ljust(65) + '{0:>15.7f}\n'.format(energy))
         fcar.write('!DATE ' + date.strftime('%a %b %d %H:%M:%S %Y') + '\n')
-        fcar.write('PBC' + ''.join(['{0:10.5f}'.format(p) for p in pars]) + ' ' + sgname.ljust(7) + '\n')
+        fcar.write('PBC' + ''.join(['{0:10.5f}'.format(p) for p in pars]) +
+                   ' ' + sgname.ljust(7) + '\n')
 
         for atom in atoms:
             line = ' '.join([atom.symbol.ljust(5),

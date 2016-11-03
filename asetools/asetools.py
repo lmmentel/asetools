@@ -473,18 +473,21 @@ def get_indices_of_duplicates(lst):
     Get indices and values of repeated elements in a list
 
     Returns:
-        an array of repeated value and a list of array with indices of repeated elements
+        an array of repeated value and a list of array with indices of
+        repeated elements
     '''
     records_array = np.array(lst)
     idx_sort = np.argsort(records_array)
     sorted_records_array = records_array[idx_sort]
-    vals, idx_start, count = np.unique(sorted_records_array, return_counts=True,
-                                    return_index=True)
+    vals, idx_start, count = np.unique(sorted_records_array,
+                                       return_counts=True,
+                                       return_index=True)
 
     # sets of indices
     res = np.split(idx_sort, idx_start[1:])
-    #filter them with respect to their size, keeping only items occurring more than once
 
+    # filter them with respect to their size,
+    # keeping only items occurring more than once
     vals = vals[count > 1]
     res = filter(lambda x: x.size > 1, res)
     return vals, res
