@@ -6,7 +6,7 @@ import os
 import pickle
 
 import ase.io
-from ase.lattice.spacegroup.cell import cell_to_cellpar
+from ase.geometry import cell_to_cellpar
 from ase.thermochemistry import HarmonicThermo, IdealGasThermo
 
 from ..asetools import AseTemplate

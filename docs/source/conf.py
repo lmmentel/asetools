@@ -14,15 +14,13 @@
 
 import sys
 import os
-import shlex
-import sphinx_rtd_theme
 import inspect
 from sphinx import apidoc
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-#sys.path.insert(0, os.path.abspath('.'))
+# sys.path.insert(0, os.path.abspath('.'))
 
 if sys.version_info.major == 3:
     from unittest.mock import MagicMock    # if python ver >= 3.3
@@ -30,10 +28,11 @@ else:
     from mock import MagicMock     # if python ver 2.7
 
 
-MOCK_MODULES = ['argparse', 'numpy', 'scipy', 'scipy.optimize', 'scipy.constants',
-                'scipy.constants.value', 'pandas', 'mendeleev', 'ase', 'ase.io',
-                'ase.io.cif', 'ase.lattice', 'ase.lattice.spacegroup',
-                'ase.lattice.spacegroup.cell', 'ase.thermochemistry']
+MOCK_MODULES = ['argparse', 'numpy', 'scipy', 'scipy.optimize',
+                'scipy.constants', 'pandas', 'mendeleev',
+                'ase', 'ase.io', 'ase.io.cif', 'ase.geometry', 'ase.build',
+                'ase.thermochemistry', 'ase.data', 'ase.data.colors',
+                'matplotlib', 'matplotlib.pyplot']
 
 sys.modules.update((mod_name, MagicMock()) for mod_name in MOCK_MODULES)
 

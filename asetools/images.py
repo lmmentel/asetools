@@ -101,6 +101,7 @@ def generate_image(atoms, arrayname, colordict, output,
 
     Args:
         atoms : ase.Atoms
+            Atoms object
         arrayname : str
             Name of the array which will be used to map the colors
         colordict : dict

@@ -505,7 +505,8 @@ def nearest_neighbors_kd_tree(x, y, k):
         k : int
             number of nearest neighbors to use
 
-    .. see::
+    .. seealso::
+
        http://stackoverflow.com/questions/15363419/finding-nearest-items-across-two-lists-arrays-in-python
 
     '''

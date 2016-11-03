@@ -13,7 +13,7 @@ import numpy as np
 
 import ase.io
 from ase import Atoms
-from ase.lattice.spacegroup.cell import cellpar_to_cell, cell_to_cellpar
+from ase.geometry import cellpar_to_cell, cell_to_cellpar
 
 from .model import (Base, DBAtom, System, DBTemplate, DBCalculator, Vibration,
                     VibrationSet)

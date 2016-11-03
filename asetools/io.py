@@ -108,7 +108,7 @@ def write_biosym_car(atoms, title='', filename='output.car'):
     '''
     Write a *car* file in the biosym archive 3 format
 
-    .. see::
+    .. seealso::
 
        http://www.upch.edu.pe/facien/fc/dbmbqf/zimic/cursos/modelamiento%202005/Manuales/Insight%20documentation/doc/formats980/File_Formats_1998.html#781840
 
