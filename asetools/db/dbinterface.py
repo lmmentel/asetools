@@ -5,7 +5,6 @@
 import argparse
 import json
 import os
-import pickle
 import pandas as pd
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -183,7 +182,7 @@ def get_template(session, ids):
 
     if isinstance(ids, int):
         q = session.query(DBTemplate).get(ids)
-    elif isinstance(ids, (str, unicode)):
+    elif isinstance(ids, str):
         q = session.query(DBTemplate).filter(DBTemplate.name == ids).one()
     return q.template
 
@@ -217,9 +216,9 @@ def atoms2db(atoms):
     for atom, imagm, icharge, force in zip(atoms, inimagm, inichar, forces):
 
         dbatoms.append(DBAtom(
-            atomic_number=atom.number,
+            atomic_number=int(atom.number),
             mass=atom.mass,
-            tag=atom.tag,
+            tag=int(atom.tag),
             x=atom.position[0],
             y=atom.position[1],
             z=atom.position[2],
@@ -289,13 +288,13 @@ def vibrations2db(vibrations, name=None, atom_ids=None, system_id=None,
                   realonly=False):
     '''
     Instantiate the :py:class:` VibrationSet <asetools.db.model.VibrationSet>`
-    from a numpy array containing vibrational energies or a pickle file with
+    from a numpy array containing vibrational energies or a numpy (.npy) file with
     such an array and return.
 
     Args:
       vibrations: numpy.ndarray or str
         numpy.ndarray of type numpy.complex128 with vibrational energies or
-        the name of the pickle file with such an array
+        the name of the numpy (.npy) file with such an array
       name : str
         Name of the set of vibrations
       atom_ids : str
@@ -316,9 +315,8 @@ def vibrations2db(vibrations, name=None, atom_ids=None, system_id=None,
             viblist = [Vibration(energy_real=r, energy_imag=i) for (r, i) in zip(vibrations.real, vibrations.imag)]
         elif realonly:
             viblist = [Vibration(energy_real=r, energy_imag=i) for (r, i) in zip(vibrations, np.zeros_like(vibrations))]
-    elif isinstance(vibrations, (str, unicode)):
-        with open(vibrations, 'r') as fvib:
-            array = pickle.load(fvib)
+    elif isinstance(vibrations, str):
+        array = np.load(vibrations)
         viblist = [Vibration(energy_real=r, energy_imag=i) for (r, i) in zip(array.real, array.imag)]
     else:
         raise ValueError('<vibrations> should be either <str> or <numpy.ndarray> type, got: {}'.format(type(vibrations)))
@@ -363,7 +361,7 @@ def calculator2db(calc, attrs='basic', description=None):
              'basic': ['calcmode', 'convergence', 'dw', 'kpts', 'pw', 'sigma',
                        'spinpol', 'xc']}
 
-    if isinstance(attrs, (str, unicode)):
+    if isinstance(attrs, str):
         if attrs in ['all', 'basic']:
             attrnames = cases[attrs]
     elif isinstance(attrs, (list, tuple)):
