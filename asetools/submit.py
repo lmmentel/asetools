@@ -272,7 +272,7 @@ def create_slurm_directives(args):
             the SLURM directives that can be written to a job script.
     '''
 
-    directives = '\n'.join(["#SBATCH --job-name={}".format(args['name']),
+    directives = '\n'.join(["#SBATCH --job-name={}".format(args['jobname']),
                             "#SBATCH --account={}".format(args['account']),
                             "#SBATCH --time={}".format(args["walltime"]),
                             "#SBATCH --mem-per-cpu={}".format(args['mem_per_cpu']),

@@ -25,7 +25,8 @@ calc = Vibespresso(pw=$pw,dw=$dw,
                 sigma = $sigma, #Fermi smearing
                 convergence={'energy':1e-10},
                 spinpol=$spinpol,
-                mode='scf', #single-point energy calculation per displacement
+		calculation='scf',
+                ion_dynamics='None',
                 )
 
 atoms.set_calculator(calc)
