@@ -44,7 +44,7 @@ class AseTemplate(Template):
             keys[k] = [x[v - 1] for x in match if x[v - 1] != '']
         return keys
 
-    def render_and_write(self, subs, output='input.py'):
+    def render_and_write(self, subs, output='input.py', safe=True):
         '''
         Write a file rendered template to a file.
 
@@ -56,9 +56,13 @@ class AseTemplate(Template):
         '''
 
         # add additional quotes for string arguments
-        subs = {k: ("'{0:s}'".format(v) if isinstance(v, str) else v) for k, v in subs.items()}
+        subs = {k: ("'{0:s}'".format(v) if isinstance(v, str) else v)
+                for k, v in subs.items()}
 
-        rendered = self.substitute(subs)
+        if safe:
+            rendered = self.safe_substitute(subs)
+        else:
+            rendered = self.substitute(subs)
         with open(output, 'w') as fout:
             fout.write(rendered)
 
@@ -123,7 +127,8 @@ def which(prog):
 def list_templates():
     '''Return a list of all the available template file names'''
 
-    path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "templates")
+    path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                        "templates")
     return os.listdir(path)
 
 

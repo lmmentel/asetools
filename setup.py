@@ -15,6 +15,7 @@ setup(
             'traj2car = asetools.cli:traj_to_car',
             'aseconvert = asetools.cli:aseconvert',
             'modifycell = asetools.cli:modify_cell',
+            'asetemplate = asetools.cli:render_template',
         ]
     },
     scripts = [

@@ -6,6 +6,7 @@ import os
 import ase.io
 from ase.build import cut
 
+from .asetools import get_template, list_templates, AseTemplate
 from .io import write_biosym_car
 
 
@@ -102,3 +103,26 @@ def modify_cell():
     new_mol = cut(mol, a=(args.x, 0, 0), b=(0, args.y, 0), c=(0, 0, args.z),
                   origo=args.origo, tolerance=args.tolerance)
     ase.io.write(args.output, new_mol)
+
+
+def render_template():
+    '''
+    Render one of the templates from asetools via command line
+    '''
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('template', choices=list_templates())
+    parser.add_argument('-kv', '--keyvalue', action='append',
+                        type=lambda kv: kv.split("="), dest='keyvalues')
+    args = parser.parse_args()
+
+    if getattr(args, 'keyvalues', None):
+        subs = dict(args.keyvalues)
+    else:
+        subs = dict()
+
+    template = AseTemplate(get_template(args.template))
+
+    fname = '.'.join(args.template.split('.')[1:])
+    template.render_and_write(subs, output=fname)
+    print('wrote file: ', fname)
