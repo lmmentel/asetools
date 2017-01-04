@@ -139,9 +139,11 @@ def get_potential_energy():
     for fname in args.fname:
         atoms = ase.io.read(fname)
         try:
-            forceline = ' (force: {0:.3f} eV/AA)'.format(np.sqrt(
-                np.sum(atoms.get_forces()**2, axis=1)).max())
+            force = np.sqrt(np.sum(atoms.get_forces()**2, axis=1)).max()
+            forcestr = '(max force: {0:.5f} eV/AA)'.format(force)
         except:
-            forceline = ' (Couldn\'t read the force)'
+            forcestr = '(force not available)'
 
-        print(fname, atoms.get_potential_energy(), 'eV', forceline)
+        print('{0:s}: {1:.10f} eV {2:s}'.format(fname,
+                                                atoms.get_potential_energy(),
+                                                forcestr))
