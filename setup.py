@@ -16,6 +16,7 @@ setup(
             'aseconvert = asetools.cli:aseconvert',
             'modifycell = asetools.cli:modify_cell',
             'asetemplate = asetools.cli:render_template',
+            'getEpot = asetools.cli:get_potential_energy', 
         ]
     },
     scripts = [
@@ -30,7 +31,6 @@ setup(
         'scripts/getAtomindices',
         'scripts/getCell',
         'scripts/getDPE',
-        'scripts/getEpot',
         'scripts/getStructDiff',
         'scripts/getads',
         'scripts/getads_screen',

@@ -3,6 +3,8 @@ from __future__ import print_function
 
 import argparse
 import os
+import numpy as np
+
 import ase.io
 from ase.build import cut
 
@@ -126,3 +128,20 @@ def render_template():
     fname = '.'.join(args.template.split('.')[1:])
     template.render_and_write(subs, output=fname)
     print('wrote file: ', fname)
+
+
+def get_potential_energy():
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('fname', nargs='+')
+    args = parser.parse_args()
+
+    for fname in args.fname:
+        atoms = ase.io.read(fname)
+        try:
+            forceline = ' (force: {0:.3f} eV/AA)'.format(np.sqrt(
+                np.sum(atoms.get_forces()**2, axis=1)).max())
+        except:
+            forceline = ' (Couldn\'t read the force)'
+
+        print(fname, atoms.get_potential_energy(), 'eV', forceline)
