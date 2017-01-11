@@ -17,6 +17,7 @@ setup(
             'modifycell = asetools.cli:modify_cell',
             'asetemplate = asetools.cli:render_template',
             'getEpot = asetools.cli:get_potential_energy', 
+            'getCell = asetools.cli:get_cell', 
         ]
     },
     scripts = [
@@ -29,7 +30,6 @@ setup(
         'scripts/genCHG',
         'scripts/genopt_zeoliteonly',
         'scripts/getAtomindices',
-        'scripts/getCell',
         'scripts/getDPE',
         'scripts/getStructDiff',
         'scripts/getads',
