@@ -533,7 +533,7 @@ def nearest_neighbors_kd_tree(x, y, k):
     return nearest_neighbor
 
 
-def rmsd(a, b):
+def rmsd(a, b, relative=True):
     '''
     Calculate Root Mean Square Deviation of atomic positions between two
     structures.
@@ -543,6 +543,9 @@ def rmsd(a, b):
             Atoms object
         b : ase.Atoms
             Atoms object
+        relative : bool
+            If `True` atomic positions relative to the unit cell will be used
+            [0--1], otherwise standard positions will be used.
 
     .. math::
 
@@ -555,4 +558,11 @@ def rmsd(a, b):
         raise ValueError('Atoms have different sizes {0:d} != {1:d}'.format(
             len(a), len(b)))
 
-    return np.sqrt(np.sum(np.sum(np.power(a - b, 2), axis=1), axis=0) / len(a))
+    if relative:
+        pa = a.get_scaled_postions()
+        pb = b.get_scaled_postions()
+    else:
+        pa = a.get_positions()
+        pb = b.get_positions()
+
+    return np.sqrt(np.sum(np.sum(np.power(pa - pb, 2), axis=1), axis=0) / len(a))
