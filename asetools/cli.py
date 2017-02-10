@@ -9,7 +9,7 @@ import ase.io
 from ase.build import cut
 from ase.geometry import cell_to_cellpar
 
-from .asetools import get_template, list_templates, AseTemplate
+from .asetools import AseTemplate
 from .io import write_biosym_car
 
 
@@ -114,7 +114,7 @@ def render_template():
     '''
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('template', choices=list_templates())
+    parser.add_argument('template', choices=AseTemplate.list_templates())
     parser.add_argument('-kv', '--keyvalue', action='append',
                         type=lambda kv: kv.split("="), dest='keyvalues')
     args = parser.parse_args()
@@ -124,7 +124,7 @@ def render_template():
     else:
         subs = dict()
 
-    template = AseTemplate(get_template(args.template))
+    template = AseTemplate.from_file(args.template)
 
     fname = '.'.join(args.template.split('.')[1:])
     template.render_and_write(subs, output=fname)
