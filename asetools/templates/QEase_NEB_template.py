@@ -6,25 +6,25 @@ from ase.visualize import view
 from asetools import set_init_magmoms
 from espresso.multiespresso import Multiespresso
 
-nimage = $nimage
+nimage = %nimage
 
-initial = read('$initial')
-final = read('$final')
+initial = read('%initial')
+final = read('%final')
 write('initial.traj',initial)
 write('final.traj',final)
 
-calcs = Multiespresso(ncalc=nimage,outdirprefix='neb',pw=$pw,dw=$dw,
-    xc='$xc',kpts=$kpts,spinpol=$spinpol)
+calcs = Multiespresso(ncalc=nimage,outdirprefix='neb',pw=%pw,dw=%dw,
+    xc='%xc',kpts=%kpts,spinpol=%spinpol)
 
 images = [initial]
 for i in range(1,nimage+1):
     image = read('NEB/neb{0}.traj'.format(i))
-    set_init_magmoms(image,[$magmoms])
+    set_init_magmoms(image,[%magmoms])
     images.append(image)
 
 images.append(final)
 
-neb = NEB(images,k=$hook,climb=$climb)
+neb = NEB(images,k=%hook,climb=%climb)
 calcs.set_neb(neb)
 
 #view(images)
@@ -34,4 +34,4 @@ for j in range(1,nimage+1):
   traj = PickleTrajectory('neb{0}.traj'.format(j), 'w', images[j])
   qn.attach(traj)
 
-qn.run(fmax=$fmax)
+qn.run(fmax=%fmax)

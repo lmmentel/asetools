@@ -175,7 +175,7 @@ def write_and_submit_script(args, submitter):
     else:
         output = subprocess.check_output([submitter['executable'], args['script_name']])
         patt = re.compile(r"[a-zA-Z\.]*(\d+)[a-zA-Z\.]*")
-        match = patt.search(output)
+        match = patt.search(str(output))
         if match:
             pid = str(match.group(1))
             with open(os.path.join(args['home'], "submitted_jobs.dat"), "a") as dat:

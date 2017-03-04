@@ -2,9 +2,9 @@
 
 '''Script used to run a geometry optimization with Quantum Espresso NB: should be run in the appropriate directory'''
 
-from asetools import get_template,get_indices_by_symbols,submit
+from asetools import get_indices_by_symbols,submit
+from asetools import AseTemplate
 from ase.io import read
-from string import Template
 import os
 import argparse
 from sys import exit
@@ -173,16 +173,14 @@ def main():
                  args['steps'] = 1
 
     #write input file(s)
-    inputstr = Template(get_template(tname)).substitute(args)
-    with open('input.py','w') as finp:
-        finp.write(inputstr)
+    template = AseTemplate.from_file(tname)
+    template.render_and_write(subs=args,output='input.py')
     if args['native']: 
         args['exargs'] += ['--program','nativeqe'] #to be passed on to submit.main
-        exec(inputstr) #generate native espresso input file for pw.x
+        exec(open('input.py').read()) #generate native espresso input file for pw.x
         if args['thermo']: #write additional files for ph.x and dynmat.x
-           phtemplate = Template(get_template('ph_template.py'))
-           with open('ph.inp','w') as finp:
-              finp.write(phtemplate.substitute(args))
+           template = AseTemplate.from_file('ph_template.py')
+           template.render_and_write(subs=args,output='ph.inp')
            with open('dynmat.inp','w') as finp:
               finp.write('&input fildyn=\'dynmat.dat\' asr=\'%s\', /\n' % args['asr'])
     

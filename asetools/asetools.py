@@ -142,7 +142,7 @@ def get_config(fname=None):
         fpath = fname
 
     siteinfo = {}
-    execfile(fpath, siteinfo)
+    exec(open(fpath).read(), siteinfo)
     return siteinfo['config']
 
 
