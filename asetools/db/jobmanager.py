@@ -45,15 +45,17 @@ class JobManager(object):
         for system in systems:
             energy = system.energy
             vibset = self.session.query(VibrationSet).\
-                                  filter(VibrationSet.name == vibsetname).\
-                                  filter(VibrationSet.system_id == system.id).one()
+                filter(VibrationSet.name == vibsetname).\
+                filter(VibrationSet.system_id == system.id).one()
             vibenergies = vibset.vibenergies
 
             if thermo == 'Harmonic':
                 out.append(HarmonicThermo(vibenergies, energy))
             elif thermo == 'IdealGas':
                 atoms = get_atoms(self.session, system.id)
-                out.append(IdealGasThermo(vibenergies, kwargs.pop('geometry'), potentialenergy=energy, atoms=atoms, **kwargs))
+                out.append(IdealGasThermo(vibenergies, kwargs.pop('geometry'),
+                                          potentialenergy=energy, atoms=atoms,
+                                          **kwargs))
 
         return out
 
@@ -123,7 +125,8 @@ class JobManager(object):
             ts_name : str
                 Name of the transitions state `System` to be created
             initial_name : str
-                Name of the `System` which will be the initial state for the neb
+                Name of the `System` which will be the initial state for the
+                neb
             final_name : str
                 Name of the `System` which will be the final state of the neb
             workdir : str
@@ -146,21 +149,23 @@ class JobManager(object):
                 Flag to mark whether to commit changes or not
         '''
 
-        initial = self.session.query(System).filter(System.name == initial_name).one()
-        final = self.session.query(System).filter(System.name == final_name).one()
+        initial = self.session.query(System).\
+            filter(System.name == initial_name).one()
+        final = self.session.query(System).\
+            filter(System.name == final_name).one()
 
         tst = System(name=ts_name, topology=initial.topology)
 
-        self.insert_jobs([tst], jobname='neb', workdir=workdir, temp_id=temp_id,
-                         calc_id=calc_id, commit=commit)
+        self.insert_jobs([tst], jobname='neb', workdir=workdir,
+                         temp_id=temp_id, calc_id=calc_id, commit=commit)
 
         repls = {'initial': 'initial.traj',
-                 'final'  : 'final.traj',
-                 'nimage' : nimage,
+                 'final': 'final.traj',
+                 'nimage': nimage,
                  'springc': springc,
-                 'climb'  : climb,
+                 'climb': climb,
                  'magmoms': magmoms,
-                 'fmax'   : fmax}
+                 'fmax': fmax}
 
         self.write_jobs([tst], 'neb', subs=[repls], commit=commit)
 
@@ -174,8 +179,9 @@ class JobManager(object):
                     vibname='freq,thermo', hostname='abel.uio.no',
                     commit=True):
         '''
-        Create :py:class:`Job <asetools.db.model.Job>` instances for calculating
-        the vibrations and/or thermochemistry and insert them into the db.
+        Create :py:class:`Job <asetools.db.model.Job>` instances for
+        calculating the vibrations and/or thermochemistry and insert them into
+        the db.
 
         Args:
             systems : list

@@ -3,9 +3,13 @@ from __future__ import print_function
 
 import argparse
 import os
+import numpy as np
+
 import ase.io
 from ase.build import cut
+from ase.geometry import cell_to_cellpar
 
+from .asetools import AseTemplate
 from .io import write_biosym_car
 
 
@@ -102,3 +106,65 @@ def modify_cell():
     new_mol = cut(mol, a=(args.x, 0, 0), b=(0, args.y, 0), c=(0, 0, args.z),
                   origo=args.origo, tolerance=args.tolerance)
     ase.io.write(args.output, new_mol)
+
+
+def render_template():
+    '''
+    Render one of the templates from asetools via command line
+    '''
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('template', choices=AseTemplate.list_templates())
+    parser.add_argument('-kv', '--keyvalue', action='append',
+                        type=lambda kv: kv.split("="), dest='keyvalues')
+    args = parser.parse_args()
+
+    if getattr(args, 'keyvalues', None):
+        subs = dict(args.keyvalues)
+    else:
+        subs = dict()
+
+    template = AseTemplate.from_file(args.template)
+
+    fname = '.'.join(args.template.split('.')[1:])
+    template.render_and_write(subs, output=fname)
+    print('wrote file: ', fname)
+
+
+def get_potential_energy():
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('fname', nargs='+')
+    args = parser.parse_args()
+
+    for fname in args.fname:
+        atoms = ase.io.read(fname)
+        try:
+            force = np.sqrt(np.sum(atoms.get_forces()**2, axis=1)).max()
+            forcestr = '(max force: {0:.5f} eV/AA)'.format(force)
+        except:
+            forcestr = '(force not available)'
+
+        print('{0:s}: {1:.10f} eV {2:s}'.format(fname,
+                                                atoms.get_potential_energy(),
+                                                forcestr))
+
+
+def get_cell():
+    'Get cell info'
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('fname', nargs='+')
+    args = parser.parse_args()
+
+    for fname in args.fname:
+        atoms = ase.io.read(fname)
+        cell = atoms.get_cell()
+        a, b, c, alpha, beta, gamma = cell_to_cellpar(cell)
+
+        print('{0:s}: '.format(fname))
+        print('\t{0:10s} : {1:8.4f} {2:8.4f} {3:8.4f}'.format('a, b, c', a, b,
+                                                              c))
+        print('\t{0:10s} : {1:8.3f} {2:8.3f} {3:8.3f}'.format('Angles', alpha,
+                                                              beta, gamma))
+        print('\tcell vectors: \n', cell, '\n')

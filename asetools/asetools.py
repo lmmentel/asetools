@@ -44,7 +44,7 @@ class AseTemplate(Template):
             keys[k] = [x[v - 1] for x in match if x[v - 1] != '']
         return keys
 
-    def render_and_write(self, subs, output='input.py'):
+    def render_and_write(self, subs, output='input.py', safe=True):
         '''
         Write a file rendered template to a file.
 
@@ -56,11 +56,59 @@ class AseTemplate(Template):
         '''
 
         # add additional quotes for string arguments
-        subs = {k: ("'{0:s}'".format(v) if isinstance(v, str) else v) for k, v in subs.items()}
+        subs = {k: ("'{0:s}'".format(v) if isinstance(v, str) else v)
+                for k, v in subs.items()}
 
-        rendered = self.substitute(subs)
+        if safe:
+            rendered = self.safe_substitute(subs)
+        else:
+            rendered = self.substitute(subs)
         with open(output, 'w') as fout:
             fout.write(rendered)
+
+    @staticmethod
+    def list_templates():
+        '''Return a list of all the available template file names'''
+
+        path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                            "templates")
+        return os.listdir(path)
+
+    @classmethod
+    def from_file(cls, tname=None):
+        '''
+        Instantiates `AseTemplate` from a template file *tname* if it can be
+        found in the templates path, otherwise raise an error.
+
+        Args:
+          tname : str
+            Name of the template file
+
+        Returns:
+          contents : AseTemplate
+            AseTemplate class instance
+
+        Raises:
+          ValueError:
+            when `tname` is `None`
+          IOerror:
+            when template file cannot be found
+        '''
+
+        path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                            "templates")
+        tempfilepath = os.path.join(path, tname)
+
+        if tname is None:
+            raise ValueError("File name not specified")
+
+        if os.path.exists(tempfilepath):
+            with open(tempfilepath) as tfile:
+                contents = tfile.read()
+            return cls(contents)
+        else:
+            raise IOError("File: '{f:s}' not found in {p:s}".format(f=tname,
+                                                                    p=path))
 
 
 def eV_to_kJmol(energy):
@@ -118,47 +166,6 @@ def which(prog):
         fprog = os.path.join(path, prog)
         if os.path.exists(fprog) and os.access(fprog, os.X_OK):
             return fprog
-
-
-def list_templates():
-    '''Return a list of all the available template file names'''
-
-    path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "templates")
-    return os.listdir(path)
-
-
-def get_template(tname=None):
-    '''
-    Return the contents of the template file *tname* if it can be found in the
-    templates path, otherwise raise an error.
-
-    Args:
-      tname : str
-        Name of the template file
-
-    Returns:
-      contents : str
-        Contents of the file *tname* as `str`
-
-    Raises:
-      ValueError:
-        when `tname` is `None`
-      IOerror:
-        when template file cannot be found
-    '''
-
-    path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "templates")
-    tempfilepath = os.path.join(path, tname)
-
-    if tname is None:
-        raise ValueError("File name not specified")
-
-    if os.path.exists(tempfilepath):
-        with open(tempfilepath) as tfile:
-            contents = tfile.read()
-        return contents
-    else:
-        raise IOError("File: '{f:s}' not found in {p:s}".format(f=tname, p=path))
 
 
 def interp_positions(image1, image2, no=1):
@@ -526,3 +533,38 @@ def nearest_neighbors_kd_tree(x, y, k):
                 used_y.add(k)
                 break
     return nearest_neighbor
+
+
+def rmsd(a, b, relative=True):
+    '''
+    Calculate Root Mean Square Deviation of atomic positions between two
+    structures.
+
+    Args:
+        a : ase.Atoms
+            Atoms object
+        b : ase.Atoms
+            Atoms object
+        relative : bool
+            If `True` atomic positions relative to the unit cell will be used
+            [0--1], otherwise standard positions will be used.
+
+    .. math::
+
+       RMSD(a, b) = \sqrt{\\frac{1}{n} \sum^{n}_{i=1} \left[ (a_{ix} - b_{ix})^2 + (a_{iy} - b_{iy})^2 + (a_{iz} - b_{iz})^2 \\right]}
+
+
+    '''
+
+    if len(a) != len(b):
+        raise ValueError('Atoms have different sizes {0:d} != {1:d}'.format(
+            len(a), len(b)))
+
+    if relative:
+        pa = a.get_scaled_positions()
+        pb = b.get_scaled_positions()
+    else:
+        pa = a.get_positions()
+        pb = b.get_positions()
+
+    return np.sqrt(np.sum(np.sum(np.power(pa - pb, 2), axis=1), axis=0) / len(a))

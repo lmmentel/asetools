@@ -15,6 +15,9 @@ setup(
             'traj2car = asetools.cli:traj_to_car',
             'aseconvert = asetools.cli:aseconvert',
             'modifycell = asetools.cli:modify_cell',
+            'asetemplate = asetools.cli:render_template',
+            'getEpot = asetools.cli:get_potential_energy', 
+            'getCell = asetools.cli:get_cell', 
         ]
     },
     scripts = [
@@ -27,9 +30,7 @@ setup(
         'scripts/genCHG',
         'scripts/genopt_zeoliteonly',
         'scripts/getAtomindices',
-        'scripts/getCell',
         'scripts/getDPE',
-        'scripts/getEpot',
         'scripts/getStructDiff',
         'scripts/getads',
         'scripts/getads_screen',
@@ -67,5 +68,5 @@ setup(
     long_description = open("README.md", "r").read(),
     name = "asetools",
     url = "www.bitbucket.org/lukaszmentel/asetools",
-    version = "0.2.1",
+    version = "0.2.3",
 )
