@@ -25,7 +25,7 @@ def main():
 			default='dyn.traj',
 			help='Name and (relative) path of output file. Default=dyn.traj')
     parser.add_argument('--kpts',
-                        default='\'gamma\'',
+                        default='gamma',
                         help='Definition of kpts spanning the Brillouin zone. Default=gamma (special qe trick compared to (1,1,1))')
     parser.add_argument('--sigma',
                         default='0.1',
@@ -76,8 +76,8 @@ def main():
                         default='7000',
                         help='Planewave energy cutoff. Default value: 7000 eV')
     parser.add_argument('--magmoms',
-                        default='',
-                        help='Provide a list of initial magnetic moments of the form \'({element},magmom),...\'. Default=\'\', i.e. non-spinpolarized calculation.')
+                        default=[],
+                        help='Provide initial magnetic moments in the form element1,magmom1,element2,magmom2...\'. Default=None, i.e. non-spinpolarized calculation.')
     parser.add_argument('--fmax',
                         default=0.01,help='Force threshold. Default=0.01 eV/AA.')
     parser.add_argument('--molecule',
@@ -93,10 +93,13 @@ def main():
     args = vars(parser.parse_args())
 
     args['spinpol'] = False
-    args['extralines'] = ''
+    args['extralines'] = '#'
     if args['magmoms']: #initial magmoms are set; turn on spin-polarized calculation
         args['spinpol'] = True
-        args['magmoms'] = args['magmoms'].replace('{','\'').replace('}','\'') #not very pretty hack to avoid using escaped quotes in the input
+        args['magmoms'] = args['magmoms'].split(',')
+        metals = args['magmoms'][::2]
+        vals = args['magmoms'][1::2]
+        args['magmoms'] = [(m,float(v)) for m,v in zip(metals,vals)]
 	
     if args['thermo']: #frequency calculation
         if args['hydrocarbon']:
@@ -110,7 +113,7 @@ def main():
            args['sigma'] = 0.0
            if args['spinpol']:
                 args['spinpol'] = 'True, fix_magmom=True'
-           if args['kpts'] == '\'gamma\'':
+           if args['kpts'] == 'gamma':
                 args['kpts'] = '(1,1,1)' #gamma point trick cannot be used in phonon calculation
 	   #parameters for ph.x (phonon calculation)
            args['nat_todo'] = ''
@@ -150,7 +153,7 @@ def main():
 
     else: #geometry optimization or single point
         if args['molecule']:
-           args['extralines'] = 'smart_cell(atoms,vac=7.5,h=0.01) #create cell with equal vacuum spacing of vac Aa in all directions. NB! grid spacing parameter h only matters for a real-space code!'
+           tname = 'QEase_molecule_template.py'
            args['fmax'] = 0.01
            args['sigma'] = 0.0
            if args['charge']:
