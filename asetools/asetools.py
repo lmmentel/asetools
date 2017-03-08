@@ -568,3 +568,33 @@ def rmsd(a, b, relative=True):
         pb = b.get_positions()
 
     return np.sqrt(np.sum(np.sum(np.power(pa - pb, 2), axis=1), axis=0) / len(a))
+
+
+def assign_magnetic_moments_by_symbols(atoms, magdict, clear=False):
+    '''
+    Set initial magnetic moments for elements specified in magset.
+
+    Args:
+        atoms : ase.Atoms
+            Atoms object
+        magdict : dict
+            Dictionary of magnetic moments to be assigned with chemical
+            symbols as keys and magnetic moments as values,
+            e.g. ``{'Fe': 4.0}``
+        clear : bool
+            If ``True`` before assigning the magnetic moments are
+            initialized as 0.0, if ``False`` the existing initial
+            magnetic moments are used
+    '''
+
+    if clear:
+        magmoms = np.zeros(len(atoms), dtype=float)
+    else:
+        magmoms = atoms.get_initial_magnetic_moments()
+
+    for symbol, magm in magdict.items():
+        mask = np.array([s == symbol for s in atoms.get_chemical_symbols()])
+        magmoms[mask] = magm
+        atoms.set_initial_magnetic_moments(magmoms)
+        if sum(mask) == 0:
+            print("couldn't find <{}> in atoms".format(symbol))
