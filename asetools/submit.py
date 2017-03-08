@@ -175,7 +175,7 @@ def write_and_submit_script(args, submitter):
     else:
         output = subprocess.check_output([submitter['executable'], args['script_name']])
         patt = re.compile(r"[a-zA-Z\.]*(\d+)[a-zA-Z\.]*")
-        match = patt.search(output)
+        match = patt.search(str(output))
         if match:
             pid = str(match.group(1))
             with open(os.path.join(args['home'], "submitted_jobs.dat"), "a") as dat:
@@ -272,7 +272,7 @@ def create_slurm_directives(args):
             the SLURM directives that can be written to a job script.
     '''
 
-    directives = '\n'.join(["#SBATCH --job-name={}".format(args['name']),
+    directives = '\n'.join(["#SBATCH --job-name={}".format(args['jobname']),
                             "#SBATCH --account={}".format(args['account']),
                             "#SBATCH --time={}".format(args["walltime"]),
                             "#SBATCH --mem-per-cpu={}".format(args['mem_per_cpu']),

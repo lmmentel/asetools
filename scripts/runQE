@@ -2,9 +2,9 @@
 
 '''Script used to run a geometry optimization with Quantum Espresso NB: should be run in the appropriate directory'''
 
-from asetools import get_template,get_indices_by_symbols,submit
+from asetools import get_indices_by_symbols,submit
+from asetools import AseTemplate
 from ase.io import read
-from string import Template
 import os
 import argparse
 from sys import exit
@@ -25,10 +25,10 @@ def main():
 			default='dyn.traj',
 			help='Name and (relative) path of output file. Default=dyn.traj')
     parser.add_argument('--kpts',
-                        default='\'gamma\'',
+                        default='gamma',
                         help='Definition of kpts spanning the Brillouin zone. Default=gamma (special qe trick compared to (1,1,1))')
     parser.add_argument('--sigma',
-                        default='0.1',
+                        default=0.1,
                         help='Fermi smearing, sigma. Default=0.1')
     parser.add_argument('--method',
 			default='standard',
@@ -40,7 +40,7 @@ def main():
                         action="store_true",
                         help='Include only hydrocarbon atoms (C,H,N) in frequency calculation. Default: False')
     parser.add_argument('--delta',
-			default='0.015',
+			default=0.015,
 			help='Displacement (in Aa) used for numerical differentiation. Default=0.015 Aa')
     parser.add_argument('--nfree',
 			default=2,
@@ -70,14 +70,14 @@ def main():
                         action="store_true",
                         default=False,help='Turn on Grimme DFT-D2 dispersion correction. Note: default s6 parameter is only good for PBE.')
     parser.add_argument('--pw',
-                        default='500',
+                        default=500,
                         help='Planewave energy cutoff. Default value: 500 eV')
     parser.add_argument('--dw',
-                        default='7000',
+                        default=7000,
                         help='Planewave energy cutoff. Default value: 7000 eV')
     parser.add_argument('--magmoms',
-                        default='',
-                        help='Provide a list of initial magnetic moments of the form \'({element},magmom),...\'. Default=\'\', i.e. non-spinpolarized calculation.')
+                        default=[],
+                        help='Provide initial magnetic moments in the form element1,magmom1,element2,magmom2...\'. Default=None, i.e. non-spinpolarized calculation.')
     parser.add_argument('--fmax',
                         default=0.01,help='Force threshold. Default=0.01 eV/AA.')
     parser.add_argument('--molecule',
@@ -93,96 +93,97 @@ def main():
     args = vars(parser.parse_args())
 
     args['spinpol'] = False
-    args['extralines'] = ''
+    args['extralines'] = '#'
     if args['magmoms']: #initial magmoms are set; turn on spin-polarized calculation
         args['spinpol'] = True
-	args['magmoms'] = args['magmoms'].replace('{','\'').replace('}','\'') #not very pretty hack to avoid using escaped quotes in the input
+        args['magmoms'] = args['magmoms'].split(',')
+        metals = args['magmoms'][::2]
+        vals = args['magmoms'][1::2]
+        args['magmoms'] = [(m,float(v)) for m,v in zip(metals,vals)]
 	
     if args['thermo']: #frequency calculation
-	if args['hydrocarbon']:
-	   args['indices'] = str(get_indices_by_symbols(read(args['input']),['C','N','H']))
-	args['input'] = '../../'+args['input'] #assumes script is run in same directory as input file. Will fail otherwise
-	if args['native']: #espresso style
-	   tname = 'QEnative_template.py'
-	   calcdir = 'Frequencies/qe_native'
-	   args['nativemode'] = 'scf'
-	   print 'NB! turning on fixed occupations (sigma=0.0). Make sure you have confirmed equivalence in scf energies between this and the non-restricted case'
-	   args['sigma'] = 0.0
-	   if args['spinpol']:
-		args['spinpol'] = 'True, fix_magmom=True'
-	   if args['kpts'] == '\'gamma\'':
+        if args['hydrocarbon']:
+           args['indices'] = str(get_indices_by_symbols(read(args['input']),['C','N','H']))
+        args['input'] = '../../'+args['input'] #assumes script is run in same directory as input file. Will fail otherwise
+        if args['native']: #espresso style
+           tname = 'QEnative_template.py'
+           calcdir = 'Frequencies/qe_native'
+           args['nativemode'] = 'scf'
+           print('NB! turning on fixed occupations (sigma=0.0). Make sure you have confirmed equivalence in scf energies between this and the non-restricted case')
+           args['sigma'] = 0.0
+           if args['spinpol']:
+                args['spinpol'] = 'True, fix_magmom=True'
+           if args['kpts'] == 'gamma':
                 args['kpts'] = '(1,1,1)' #gamma point trick cannot be used in phonon calculation
 	   #parameters for ph.x (phonon calculation)
-	   args['nat_todo'] = ''
-  	   args['phextrapars'] = ''
-	   if args['indices'] == '[]':
-		args['indices'] = ''
-  	   else:
-		args['indices'] = args['indices'].translate(None,'[]').split(',')
-		args['indices'] = [str(int(x)+1) for x in args['indices']] #espresso enumerates atoms from 1 not from 0 like ASE
+           args['nat_todo'] = ''
+           args['phextrapars'] = ''
+           if args['indices'] == '[]':
+                args['indices'] = ''
+           else:
+                args['indices'] = args['indices'].translate(None,'[]').split(',')
+                args['indices'] = [str(int(x)+1) for x in args['indices']] #espresso enumerates atoms from 1 not from 0 like ASE
                 args['nat_todo']='nat_todo=%d,' % len(args['indices'])
-		args['indices'] = ' '.join(map(str,args['indices']))
-           	args['phextrapars'] = 'nogg=.true.,\n'
-  	   if args['IR']: #note: only available with internal espresso routines
+                args['indices'] = ' '.join(map(str,args['indices']))
+                args['phextrapars'] = 'nogg=.true.,\n'
+           if args['IR']: #note: only available with internal espresso routines
               args['phextrapars'] += '  zue=.true,\n  epsil=.true.,\n  trans=.true.'
-	   if args['thermo'] == 'IdealGas':
-	      args['asr'] = 'zero-dim'
-	   else:
-	      args['asr'] = 'crystal'	
-	else: #ase style
-	   calcdir = 'Frequencies/delta_'+args['delta']
-	   if args['thermo'] == 'IdealGas':
+           if args['thermo'] == 'IdealGas':
+              args['asr'] = 'zero-dim'
+           else:
+              args['asr'] = 'crystal'	
+        else: #ase style
+           calcdir = 'Frequencies/delta_'+args['delta']
+           if args['thermo'] == 'IdealGas':
      	      tname = 'QEase_vibIdeal_template.py'
-  	   elif args['thermo'] == 'Harmonic':
-	      tname = 'QEase_vibHarm_template.py'
-  	   else:
-     	      print('Thermo option {0} not supported. Try -h option for help.'.format(args['thermo']))
-     	      exit()
+           elif args['thermo'] == 'Harmonic':
+              tname = 'QEase_vibHarm_template.py'
+           else:
+              print('Thermo option {0} not supported. Try -h option for help.'.format(args['thermo']))
+              exit()
 
-	#change to Frequency dir for creating input files and submit job
-	try:
-	   os.makedirs(calcdir)
-	except OSError, e:
-	   if e.errno !=17: #directory exists
-	     raise
-	   pass
-  	os.chdir(calcdir)	
+        #change to Frequency dir for creating input files and submit job
+        try:
+           os.makedirs(calcdir)
+        except OSError as e:
+           if e.errno !=17: #directory exists
+             raise
+           pass
+        os.chdir(calcdir)	
 
     else: #geometry optimization or single point
-	if args['molecule']:
-           args['extralines'] = 'smart_cell(atoms,vac=7.5,h=0.01) #create cell with equal vacuum spacing of vac Aa in all directions. NB! grid spacing parameter h only matters for a real-space code!'
+        if args['molecule']:
+           tname = 'QEase_molecule_template.py'
            args['fmax'] = 0.01
            args['sigma'] = 0.0
            if args['charge']:
-              print 'Charged molecule. Turning on assume_isolated screening, using Martyna-Tuckerman correction.'
+              print('Charged molecule. Turning on assume_isolated screening, using Martyna-Tuckerman correction.')
               args['screening']='mt'	
-    	if args['native']: #espresso style
-	   tname = 'QEnative_template.py'
+        if args['native']: #espresso style
+           tname = 'QEnative_template.py'
            if args['opt']:
               args['nativemode'] = 'bfgs'
-	   else:
-	      args['nativemode'] = 'scf'
-    	else: #ase style
-	   if args['cellopt']:
-	      tname = 'QEase_cellopt_template.py'
-	   else:
+           else:
+              args['nativemode'] = 'scf'
+        else: #ase style
+           if args['cellopt']:
+              tname = 'QEase_cellopt_template.py'
+           else:
               tname = 'QEase_template.py'
-	      if args['opt']:
-	         args['steps'] = 1e3
-	      else:
-	         args['steps'] = 1
+              if args['opt']:
+                 args['steps'] = 1e3
+              else:
+                 args['steps'] = 1
 
     #write input file(s)
-    inputstr = Template(get_template(tname)).substitute(args)
-    with open('input.py','w') as finp:
-	finp.write(inputstr)
+    template = AseTemplate.from_file(tname)
+    template.render_and_write(subs=args,output='input.py')
     if args['native']: 
-	args['exargs'] += ['--program','nativeqe'] #to be passed on to submit.main
-	exec(inputstr) #generate native espresso input file for pw.x
-	if args['thermo']: #write additional files for ph.x and dynmat.x
-           phtemplate = Template(get_template('ph_template.py'))
-           with open('ph.inp','w') as finp:
-              finp.write(phtemplate.substitute(args))
+        args['exargs'] += ['--program','nativeqe'] #to be passed on to submit.main
+        exec(open('input.py').read()) #generate native espresso input file for pw.x
+        if args['thermo']: #write additional files for ph.x and dynmat.x
+           template = AseTemplate.from_file('ph_template.py')
+           template.render_and_write(subs=args,output='ph.inp')
            with open('dynmat.inp','w') as finp:
               finp.write('&input fildyn=\'dynmat.dat\' asr=\'%s\', /\n' % args['asr'])
     
