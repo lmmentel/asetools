@@ -5,6 +5,8 @@
 import os
 import pickle
 
+import logging
+
 import ase.io
 from ase.geometry import cell_to_cellpar
 from ase.thermochemistry import HarmonicThermo, IdealGasThermo
@@ -14,6 +16,10 @@ from ..submit import main as sub
 from .model import Job, System, VibrationSet
 from .dbinterface import vibrations2db, atoms2db, get_atoms
 from .utils import sanitizestr
+
+
+log = logging.getLogger(__name__)
+log.addHandler(logging.NullHandler())
 
 
 class JobManager(object):
@@ -380,7 +386,8 @@ class JobManager(object):
             self.session.rollback()
 
     def write_jobs(self, systems, jobname, subs=None, submit=False,
-                   submitargs=None, overwrite=False, commit=True):
+                   submitargs=None, overwrite=False, commit=True,
+                   write_struct=False, struct_fname='initial.traj'):
         '''
         Render the template file into an input script for the job, write the
         file and submit the job (if requested).
@@ -425,6 +432,14 @@ class JobManager(object):
                 print('Not writing input for {0}, missing values for: {1}'.format(
                     system.name, str(set(atemp.get_keys()['named']) - set(subs2render.keys()))))
 
+            if write_struct:
+
+                path = job.abspath
+
+                atoms = get_atoms(self.session, system.id)
+                ase.io.write(os.path.join(path, struct_fname), atoms)
+
+                log.info('wrote file {} in {}'.format(struct_fname, path))
         if submit:
             self.submit_jobs(systems, jobname, submitargs, commit)
 
