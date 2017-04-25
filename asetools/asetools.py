@@ -546,8 +546,8 @@ def rmsd(a, b, relative=True):
         b : ase.Atoms
             Atoms object
         relative : bool
-            If `True` atomic positions relative to the unit cell will be used
-            [0--1], otherwise standard positions will be used.
+            If `True` atomic positions relative to the unit cell will be
+            used [0--1], otherwise standard positions will be used.
 
     .. math::
 

@@ -3,11 +3,11 @@
 from setuptools import setup
 
 setup(
-    author = "Lukasz Mentel",
-    author_email = "lmmentel@gmail.com",
-    packages = ['asetools', 'asetools/db'],
-    include_package_data = True,
-    entry_points = {
+    author="Lukasz Mentel",
+    author_email="lmmentel@gmail.com",
+    packages=['asetools', 'asetools/db'],
+    include_package_data=True,
+    entry_points={
         'console_scripts': [
             'submitQE = asetools.submit:main',
             'dbadd = asetools.db.dbinterface:add_system',
@@ -16,11 +16,12 @@ setup(
             'aseconvert = asetools.cli:aseconvert',
             'modifycell = asetools.cli:modify_cell',
             'asetemplate = asetools.cli:render_template',
-            'getEpot = asetools.cli:get_potential_energy', 
-            'getCell = asetools.cli:get_cell', 
+            'getEpot = asetools.cli:get_potential_energy',
+            'getCell = asetools.cli:get_cell',
+            'rmsd = asetools.cli:rmsdcli',
         ]
     },
-    scripts = [
+    scripts=[
         'scripts/checkpointNEB',
         'scripts/checkpointQE',
         'scripts/cubecutperiodic',
@@ -63,10 +64,10 @@ setup(
         'scripts/writecif',
         'scripts/writeqespec',
     ],
-    description = "convenience scripts for ASE",
-    license = open("LICENSE.txt", "r").read(),
-    long_description = open("README.md", "r").read(),
-    name = "asetools",
-    url = "www.bitbucket.org/lukaszmentel/asetools",
-    version = "0.2.3",
+    description="convenience scripts for ASE",
+    license=open("LICENSE.txt", "r").read(),
+    long_description=open("README.md", "r").read(),
+    name="asetools",
+    url="www.bitbucket.org/lukaszmentel/asetools",
+    version="0.2.3",
 )

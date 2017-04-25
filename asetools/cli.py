@@ -9,7 +9,7 @@ import ase.io
 from ase.build import cut
 from ase.geometry import cell_to_cellpar
 
-from .asetools import AseTemplate
+from .asetools import AseTemplate, rmsd
 from .io import write_biosym_car
 
 
@@ -168,3 +168,18 @@ def get_cell():
         print('\t{0:10s} : {1:8.3f} {2:8.3f} {3:8.3f}'.format('Angles', alpha,
                                                               beta, gamma))
         print('\tcell vectors: \n', cell, '\n')
+
+
+def rmsdcli():
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('atomsA')
+    parser.add_argument('atomsB')
+    parser.add_argument('-r', '--relative', action='store_true',
+                        help='use positions relative to the unit cell')
+    args = parser.parse_args()
+
+    a = ase.io.read(args.atomsA)
+    b = ase.io.read(args.atomsB)
+
+    print('RMSD: {0:.6f}'.format(rmsd(a, b, args.relative)))
