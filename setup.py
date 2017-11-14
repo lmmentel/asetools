@@ -7,6 +7,14 @@ setup(
     author_email="lmmentel@gmail.com",
     packages=['asetools', 'asetools/db'],
     include_package_data=True,
+    install_requires = ['builtins',
+                        'numpy',
+                        'scipy',
+                        'pandas',
+                        'sqlalchemy',
+                        'alembic',
+                        'ase',
+                        'matplotlib'],
     entry_points={
         'console_scripts': [
             'submitQE = asetools.submit:main',
