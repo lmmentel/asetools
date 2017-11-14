@@ -377,6 +377,8 @@ class JobManager(object):
             mol.pbc_c = bool(pbc[2])
             mol.formula = atoms.get_chemical_formula()
             mol.energy = atoms.get_potential_energy()
+            mol.absolute_magnetization = atoms.get_absolute_magnetization()
+            mol.total_magnetization = atoms.get_total_magnetization()
             self.session.add(mol)
             self.session.add(job)
 
