@@ -479,6 +479,8 @@ class System(ProxiedDictMixin, Base):
     free_energy = Column(Float)
     thermo = Column(String)
     magnetic_moment = Column(Float)
+    absolute_magnetization = Column(Float)
+    total_magnetization = Column(Float)
     #dipole_x = Column(Float)
     #dipole_y = Column(Float)
     #dipole_z = Column(Float)
