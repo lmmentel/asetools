@@ -411,34 +411,6 @@ def set_init_magmoms_from_indxs(atoms, indxs):
     atoms.set_initial_magnetic_moments(new_magmoms)
 
 
-def get_magnetization(logfile):
-    #Adapted from ase-espresso interface written by Johannes Voss
-    #https://github.com/vossjo/ase-espresso/wiki
-    '''
-    Returns total and absolute magnetization after SCF run.
-    Units are Bohr magnetons per unit cell, directly read from PWscf log.
-    Returns (0,0) if no magnetization is found in log.
-    '''
-    p1 = os.popen('grep "total magnetization" ' + logfile + ' | tail -1', 'r')
-    s1 = p1.readlines()
-    p1.close()
-    p2 = os.popen('grep "absolute magnetization" ' + logfile + ' | tail -1', 'r')
-    s2 = p2.readlines()
-    p2.close()
-
-    if len(s1) == 0:
-        assert len(s2) == 0
-        return (0, 0)
-    else:
-        assert len(s1) == 1
-        assert len(s2) == 1
-        s1_ = s1[0].split("=")[-1]
-        totmag = float(s1_.split("Bohr")[0])
-        s2_ = s2[0].split("=")[-1]
-        absmag = float(s2_.split("Bohr")[0])
-        return(totmag, absmag)
-
-
 def find_closest(atoms, reference, symbol=None, n=1):
     '''
     Return a list of indices of atoms closest to the reference atom
